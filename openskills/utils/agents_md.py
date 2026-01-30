@@ -2,7 +2,10 @@
 AGENTS.md generation and update utilities
 """
 
+import os
+import platform
 import re
+import shutil
 from typing import Any
 
 from openskills.types import Skill
@@ -29,6 +32,39 @@ def parse_current_skills(content: str) -> list[str]:
     return skill_names
 
 
+def get_installation_method() -> tuple[str, str]:
+    """
+    Detect how OpenSkills is installed and return appropriate command format
+    
+    Returns:
+        Tuple of (command_prefix, command_description)
+        - command_prefix: The actual command to use (e.g., 'openskills', 'openskills.bat', './openskills.sh')
+        - command_description: Human-readable description of the command format
+    """
+    is_windows = platform.system() == 'Windows'
+    
+    # Check for project-level installation scripts
+    if is_windows:
+        script_path = 'openskills.bat'
+    else:
+        script_path = './openskills.sh'
+    
+    # Check if script exists in current directory
+    if os.path.exists(script_path):
+        if is_windows:
+            return 'openskills.bat', 'openskills.bat read <skill-name>'
+        else:
+            return './openskills.sh', './openskills.sh read <skill-name>'
+    
+    # Check if openskills command is available globally (in PATH)
+    openskills_in_path = shutil.which('openskills')
+    if openskills_in_path:
+        return 'openskills', 'openskills read <skill-name>'
+    
+    # Fallback: assume global openskills command
+    return 'openskills', 'openskills read <skill-name>'
+
+
 def generate_skills_xml(skills: list[Skill]) -> str:
     """
     Generate skills XML section for AGENTS.md
@@ -39,6 +75,10 @@ def generate_skills_xml(skills: list[Skill]) -> str:
     Returns:
         XML-formatted skills section
     """
+    # Detect installation method and generate appropriate command
+    command_prefix, command_syntax = get_installation_method()
+    multiple_syntax = f'{command_prefix} read skill-one,skill-two'
+    
     skill_tags = '\n\n'.join([
         f"""<skill>
 <name>{skill.name}</name>
@@ -57,8 +97,8 @@ def generate_skills_xml(skills: list[Skill]) -> str:
 When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.
 
 How to use skills:
-- Invoke: `npx openskills read <skill-name>` (run in your shell)
-  - For multiple: `npx openskills read skill-one,skill-two`
+- Invoke: {command_syntax} (run in your shell)
+  - For multiple: {multiple_syntax}
 - The skill content will load with detailed instructions on how to complete the task
 - Base directory provided in output for resolving bundled resources (references/, scripts/, assets/)
 
