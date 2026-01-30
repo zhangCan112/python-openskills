@@ -375,6 +375,18 @@ def install_skill(source: str, options: InstallOptions) -> None:
         print_post_install_hints(is_project)
         return
     
+    # Check if source is an existing local path (without prefix)
+    expanded_source = expand_path(source)
+    if os.path.isdir(expanded_source):
+        source_info = {
+            'source': source,
+            'sourceType': 'local',
+            'localRoot': expanded_source
+        }
+        install_from_local(expanded_source, target_dir, options, source_info)
+        print_post_install_hints(is_project)
+        return
+    
     # Parse git source
     repo_url: str
     skill_subpath = ''
