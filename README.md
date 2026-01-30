@@ -63,10 +63,20 @@ pip install -e .
 
 ## 使用方法
 
+根据您选择的安装方式，命令格式略有不同：
+
+- **方式1（直接使用）**: 使用 `python -m openskills.cli` 前缀
+- **方式2/3（虚拟环境/全局安装）**: 直接使用 `openskills` 命令
+
+以下示例使用 `openskills` 命令，如果使用方式1，请在命令前加上 `python -m openskills.cli`。
+
 ### 列出已安装的技能
 
 ```bash
 openskills list
+
+# 如果使用方式1，请使用：
+python -m openskills.cli list
 ```
 
 ### 安装技能
@@ -85,6 +95,9 @@ openskills install owner/skill --universal
 
 # 跳过交互式选择，安装所有找到的技能
 openskills install owner/skill --yes
+
+# 如果使用方式1，请在命令前加上 python -m openskills.cli
+# 例如：python -m openskills.cli install anthropics/skills
 ```
 
 从本地路径安装：
@@ -112,6 +125,8 @@ openskills read skill-one skill-two
 
 # 使用逗号分隔
 openskills read skill-one,skill-two
+
+# 如果使用方式1，请在命令前加上 python -m openskills.cli
 ```
 
 ### 更新技能
@@ -122,6 +137,8 @@ openskills update
 
 # 更新特定技能
 openskills update skill-name skill-two
+
+# 如果使用方式1，请在命令前加上 python -m openskills.cli
 ```
 
 ### 同步到AGENTS.md
@@ -135,12 +152,16 @@ openskills sync --yes
 
 # 指定输出文件
 openskills sync --output CUSTOM.md
+
+# 如果使用方式1，请在命令前加上 python -m openskills.cli
 ```
 
 ### 管理技能（交互式删除）
 
 ```bash
 openskills manage
+
+# 如果使用方式1，请在命令前加上 python -m openskills.cli
 ```
 
 ### 删除特定技能
@@ -150,6 +171,8 @@ openskills remove skill-name
 
 # 或使用别名
 openskills rm skill-name
+
+# 如果使用方式1，请在命令前加上 python -m openskills.cli
 ```
 
 ## 技能目录结构
@@ -160,6 +183,19 @@ OpenSkills在以下位置查找技能（按优先级）：
 2. `~/.agent/skills` - 全局通用（.agent）
 3. `./.claude/skills` - 项目Claude
 4. `~/.claude/skills` - 全局Claude
+
+## 快速参考
+
+| 操作 | 虚拟环境/全局安装 | 直接运行 |
+|------|------------------|----------|
+| 查看帮助 | `openskills --help` | `python -m openskills.cli --help` |
+| 列出技能 | `openskills list` | `python -m openskills.cli list` |
+| 安装技能 | `openskills install <skill>` | `python -m openskills.cli install <skill>` |
+| 读取技能 | `openskills read <skill>` | `python -m openskills.cli read <skill>` |
+| 更新技能 | `openskills update` | `python -m openskills.cli update` |
+| 同步技能 | `openskills sync` | `python -m openskills.cli sync` |
+| 管理技能 | `openskills manage` | `python -m openskills.cli manage` |
+| 删除技能 | `openskills remove <skill>` | `python -m openskills.cli remove <skill>` |
 
 ## 与TypeScript版本的差异
 
