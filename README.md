@@ -55,6 +55,36 @@ pip install -e .
 
 安装后可以直接使用 `openskills` 命令。
 
+### 方式4：安装到指定项目（推荐，隔离且便捷）
+
+将OpenSkills安装到任意目标项目中，自动创建虚拟环境并配置，不会影响目标项目的git：
+
+```bash
+# Windows
+install_to_project.bat C:\path\to\your\project
+
+# Linux/Mac
+bash install_to_project.sh /path/to/your/project
+```
+
+**脚本会自动完成以下操作：**
+1. 在目标项目中创建虚拟环境 `.venv`
+2. 安装OpenSkills到虚拟环境
+3. 自动将 `.venv` 添加到 `.gitignore`（不会提交到git）
+4. 创建便捷启动脚本 `openskills.bat`（Windows）或 `openskills.sh`（Linux/Mac）
+
+**使用方式：**
+```bash
+# 方式1：激活虚拟环境后使用
+.venv\Scripts\activate  # Windows
+source .venv/bin/activate  # Linux/Mac
+openskills --help
+
+# 方式2：使用快捷脚本（更方便）
+openskills.bat --help  # Windows
+./openskills.sh --help  # Linux/Mac
+```
+
 ## 依赖项
 
 - Python 3.8+
@@ -67,6 +97,7 @@ pip install -e .
 
 - **方式1（直接使用）**: 使用 `python -m openskills.cli` 前缀
 - **方式2/3（虚拟环境/全局安装）**: 直接使用 `openskills` 命令
+- **方式4（安装到项目）**: 激活虚拟环境后使用 `openskills` 命令，或使用快捷脚本
 
 以下示例使用 `openskills` 命令，如果使用方式1，请在命令前加上 `python -m openskills.cli`。
 
@@ -186,16 +217,16 @@ OpenSkills在以下位置查找技能（按优先级）：
 
 ## 快速参考
 
-| 操作 | 虚拟环境/全局安装 | 直接运行 |
-|------|------------------|----------|
-| 查看帮助 | `openskills --help` | `python -m openskills.cli --help` |
-| 列出技能 | `openskills list` | `python -m openskills.cli list` |
-| 安装技能 | `openskills install <skill>` | `python -m openskills.cli install <skill>` |
-| 读取技能 | `openskills read <skill>` | `python -m openskills.cli read <skill>` |
-| 更新技能 | `openskills update` | `python -m openskills.cli update` |
-| 同步技能 | `openskills sync` | `python -m openskills.cli sync` |
-| 管理技能 | `openskills manage` | `python -m openskills.cli manage` |
-| 删除技能 | `openskills remove <skill>` | `python -m openskills.cli remove <skill>` |
+| 操作 | 虚拟环境/全局安装 | 安装到项目 | 直接运行 |
+|------|------------------|------------|----------|
+| 查看帮助 | `openskills --help` | `openskills.bat --help`<br>`./openskills.sh --help` | `python -m openskills.cli --help` |
+| 列出技能 | `openskills list` | `openskills.bat list`<br>`./openskills.sh list` | `python -m openskills.cli list` |
+| 安装技能 | `openskills install <skill>` | `openskills.bat install <skill>`<br>`./openskills.sh install <skill>` | `python -m openskills.cli install <skill>` |
+| 读取技能 | `openskills read <skill>` | `openskills.bat read <skill>`<br>`./openskills.sh read <skill>` | `python -m openskills.cli read <skill>` |
+| 更新技能 | `openskills update` | `openskills.bat update`<br>`./openskills.sh update` | `python -m openskills.cli update` |
+| 同步技能 | `openskills sync` | `openskills.bat sync`<br>`./openskills.sh sync` | `python -m openskills.cli sync` |
+| 管理技能 | `openskills manage` | `openskills.bat manage`<br>`./openskills.sh manage` | `python -m openskills.cli manage` |
+| 删除技能 | `openskills remove <skill>` | `openskills.bat remove <skill>`<br>`./openskills.sh remove <skill>` | `python -m openskills.cli remove <skill>` |
 
 ## 与TypeScript版本的差异
 
