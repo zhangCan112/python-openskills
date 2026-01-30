@@ -4,17 +4,9 @@ OpenSkills的Python实现 - 通用的AI编码代理技能加载器，用于安�
 
 ## 安装
 
-### 从源码安装
-
 ```bash
 cd python-openskills
 pip install -e .
-```
-
-### 使用pip安装（如果已发布到PyPI）
-
-```bash
-pip install openskills
 ```
 
 ## 依赖项
