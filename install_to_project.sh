@@ -43,6 +43,12 @@ echo "[Check] Python version: $(python3 --version)"
 # Get absolute path of OpenSkills project BEFORE changing directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Enter target project directory
+cd "$TARGET_PROJECT" || {
+    echo "[Error] Cannot enter target project directory: $TARGET_PROJECT"
+    exit 1
+}
+
 echo "[1/5] Creating virtual environment in target project..."
 if [ -d ".venv" ]; then
     echo "[Info] Virtual environment already exists, removing..."

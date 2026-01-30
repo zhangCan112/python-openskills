@@ -47,6 +47,14 @@ if errorlevel 1 (
 REM Get absolute path of OpenSkills project BEFORE changing directory
 set SCRIPT_DIR=%~dp0
 
+REM Enter target project directory
+pushd "%TARGET_PROJECT%"
+if errorlevel 1 (
+    echo [Error] Cannot enter target project directory: %TARGET_PROJECT%
+    pause
+    exit /b 1
+)
+
 echo [1/5] Creating virtual environment in target project...
 if exist ".venv" (
     echo [Info] Virtual environment already exists, removing...
