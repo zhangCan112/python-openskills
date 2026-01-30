@@ -4,10 +4,56 @@ OpenSkills的Python实现 - 通用的AI编码代理技能加载器，用于安�
 
 ## 安装
 
+本项目提供多种安装方式，您可以根据需要选择：
+
+### 方式1：直接使用（无需安装，推荐快速测试）
+
+不需要任何安装，直接使用 Python 模块运行：
+
 ```bash
-cd python-openskills
+# 查看帮助
+python -m openskills.cli --help
+
+# 列出已安装的技能
+python -m openskills.cli list
+
+# 安装技能
+python -m openskills.cli install anthropics/skills
+```
+
+### 方式2：使用虚拟环境（推荐，隔离环境）
+
+在特定文件夹下创建虚拟环境：
+
+```bash
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
+
+# Linux/Mac
+python -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
+
+使用便捷脚本（自动创建虚拟环境并安装）：
+
+```bash
+# Windows
+setup_env.bat
+
+# Linux/Mac
+bash setup_env.sh
+```
+
+### 方式3：全局安装
+
+```bash
+pip install -e .
+```
+
+安装后可以直接使用 `openskills` 命令。
 
 ## 依赖项
 
