@@ -1,18 +1,18 @@
 @echo off
-REM OpenSkills 安装到目标项目脚本 (Windows)
-REM 用法: install_to_project.bat <目标项目路径>
+REM OpenSkills installation to target project script (Windows)
+REM Usage: install_to_project.bat <target_project_path>
 
 setlocal enabledelayedexpansion
 
-REM 检查参数
+REM Check parameters
 if "%~1"=="" (
     echo ========================================
-    echo OpenSkills 安装到目标项目
+    echo OpenSkills Installation to Target Project
     echo ========================================
     echo.
-    echo 用法: install_to_project.bat ^<目标项目路径^>
+    echo Usage: install_to_project.bat ^<target_project_path^>
     echo.
-    echo 示例:
+    echo Examples:
     echo   install_to_project.bat C:\my-project
     echo   install_to_project.bat ..\my-project
     echo.
@@ -23,65 +23,65 @@ if "%~1"=="" (
 set TARGET_PROJECT=%~1
 
 echo ========================================
-echo OpenSkills 安装到目标项目
+echo OpenSkills Installation to Target Project
 echo ========================================
 echo.
-echo 目标项目路径: %TARGET_PROJECT%
+echo Target project path: %TARGET_PROJECT%
 echo.
 
-REM 检查目标项目路径是否存在
+REM Check if target project path exists
 if not exist "%TARGET_PROJECT%" (
-    echo [错误] 目标项目路径不存在: %TARGET_PROJECT%
+    echo [Error] Target project path does not exist: %TARGET_PROJECT%
     pause
     exit /b 1
 )
 
-REM 检查Python是否安装
+REM Check if Python is installed
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未找到Python。请先安装Python 3.8或更高版本。
+    echo [Error] Python not found. Please install Python 3.8 or higher.
     pause
     exit /b 1
 )
 
-REM 进入目标项目目录
+REM Enter target project directory
 pushd "%TARGET_PROJECT%"
 if errorlevel 1 (
-    echo [错误] 无法进入目标项目目录: %TARGET_PROJECT%
+    echo [Error] Cannot enter target project directory: %TARGET_PROJECT%
     pause
     exit /b 1
 )
 
-echo [1/5] 在目标项目中创建虚拟环境...
+echo [1/5] Creating virtual environment in target project...
 if exist ".venv" (
-    echo [提示] 虚拟环境已存在，正在移除...
+    echo [Info] Virtual environment already exists, removing...
     rmdir /s /q .venv
 )
 
 python -m venv .venv
 if errorlevel 1 (
-    echo [错误] 创建虚拟环境失败。
+    echo [Error] Failed to create virtual environment.
     popd
     pause
     exit /b 1
 )
 
-echo [2/5] 激活虚拟环境...
+echo [2/5] Activating virtual environment...
 call .venv\Scripts\activate.bat
 
-echo [3/5] 安装OpenSkills...
-REM 获取当前脚本所在目录的绝对路径
+echo [3/5] Installing OpenSkills...
+REM Get absolute path of current script directory
 set SCRIPT_DIR=%~dp0
 
 pip install -e "%SCRIPT_DIR%."
 if errorlevel 1 (
-    echo [错误] 安装OpenSkills失败。
+    echo [Error] Failed to install OpenSkills.
     popd
     pause
     exit /b 1
 )
 
-echo [4/5] 添加到.gitignore...
+echo [4/5] Adding to .gitignore...
 set GITIGNORE=.gitignore
 set FOUND=0
 
@@ -96,13 +96,13 @@ if %FOUND%==0 (
     echo. >> "%GITIGNORE%"
     echo # OpenSkills virtual environment >> "%GITIGNORE%"
     echo .venv/ >> "%GITIGNORE%"
-    echo [提示] 已添加 .venv 到 .gitignore
+    echo [Info] Added .venv to .gitignore
 ) else (
-    echo [提示] .venv 已在 .gitignore 中，跳过
+    echo [Info] .venv already in .gitignore, skipped
 )
 
-echo [5/5] 创建启动脚本...
-REM 创建便捷的启动脚本
+echo [5/5] Creating startup script...
+REM Create convenient startup script
 echo @echo off > openskills.bat
 echo call .venv\Scripts\activate.bat >> openskills.bat
 echo openskills %%* >> openskills.bat
@@ -110,18 +110,18 @@ echo deactivate >> openskills.bat
 
 echo.
 echo ========================================
-echo [成功] OpenSkills安装完成！
+echo [Success] OpenSkills Installation Complete!
 echo ========================================
 echo.
-echo 使用说明：
-echo   1. 激活虚拟环境: .venv\Scripts\activate
-echo   2. 使用命令: openskills --help
-echo   3. 或使用快捷命令: openskills.bat --help
-echo   4. 退出虚拟环境: deactivate
+echo Usage:
+echo   1. Activate virtual environment: .venv\Scripts\activate
+echo   2. Use command: openskills --help
+echo   3. Or use quick command: openskills.bat --help
+echo   4. Deactivate virtual environment: deactivate
 echo.
-echo 注意：
-echo   - 虚拟环境已添加到 .gitignore，不会提交到git
-echo   - 项目根目录已创建 openskills.bat 快捷脚本
+echo Note:
+echo   - Virtual environment added to .gitignore, will not commit to git
+echo   - Created openskills.bat quick script in project root
 echo.
 
 popd

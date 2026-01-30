@@ -1,49 +1,49 @@
 #!/bin/bash
-# OpenSkills 虚拟环境设置脚本 (Linux/Mac)
+# OpenSkills virtual environment setup script (Linux/Mac)
 
 echo "========================================"
-echo "OpenSkills 虚拟环境设置"
+echo "OpenSkills Virtual Environment Setup"
 echo "========================================"
 echo
 
-# 检查Python是否安装
+# Check if Python is installed
 if ! command -v python3 &> /dev/null; then
-    echo "[错误] 未找到Python3。请先安装Python 3.8或更高版本。"
+    echo "[Error] Python3 not found. Please install Python 3.8 or higher."
     exit 1
 fi
 
-echo "[检查] Python版本: $(python3 --version)"
+echo "[Check] Python version: $(python3 --version)"
 
-# 检查虚拟环境是否已存在
+# Check if virtual environment already exists
 if [ -d ".venv" ]; then
-    echo "[提示] 虚拟环境已存在，正在移除..."
+    echo "[Info] Virtual environment already exists, removing..."
     rm -rf .venv
 fi
 
-echo "[1/3] 创建虚拟环境..."
+echo "[1/3] Creating virtual environment..."
 python3 -m venv .venv
 if [ $? -ne 0 ]; then
-    echo "[错误] 创建虚拟环境失败。"
+    echo "[Error] Failed to create virtual environment."
     exit 1
 fi
 
-echo "[2/3] 激活虚拟环境..."
+echo "[2/3] Activating virtual environment..."
 source .venv/bin/activate
 
-echo "[3/3] 安装依赖..."
+echo "[3/3] Installing dependencies..."
 pip install -e .
 if [ $? -ne 0 ]; then
-    echo "[错误] 安装依赖失败。"
+    echo "[Error] Failed to install dependencies."
     exit 1
 fi
 
 echo
 echo "========================================"
-echo "[成功] 虚拟环境设置完成！"
+echo "[Success] Virtual Environment Setup Complete!"
 echo "========================================"
 echo
-echo "使用说明："
-echo "  1. 激活虚拟环境: source .venv/bin/activate"
-echo "  2. 使用命令: openskills --help"
-echo "  3. 退出虚拟环境: deactivate"
+echo "Usage:"
+echo "  1. Activate virtual environment: source .venv/bin/activate"
+echo "  2. Use command: openskills --help"
+echo "  3. Deactivate virtual environment: deactivate"
 echo
