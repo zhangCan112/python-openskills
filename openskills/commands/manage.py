@@ -36,7 +36,7 @@ def prompt_for_selection(message: str, choices: list[dict[str, Any]]) -> list[st
             return [choice['value'] for choice in choices]
 
 
-async def manage_skills() -> None:
+def manage_skills() -> None:
     """
     Interactively manage (remove) installed skills
     """

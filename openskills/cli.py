@@ -81,15 +81,13 @@ def update(skill_names):
 @click.option('--output', '-o', help='Output file path (default: AGENTS.md)')
 def sync(yes, output):
     """Update AGENTS.md with installed skills (interactive, pre-selects current state)"""
-    import asyncio
-    asyncio.run(sync_agents_md(yes=yes, output=output))
+    sync_agents_md(yes=yes, output=output)
 
 
 @cli.command()
 def manage():
     """Interactively manage (remove) installed skills"""
-    import asyncio
-    asyncio.run(manage_skills())
+    manage_skills()
 
 
 @cli.command()

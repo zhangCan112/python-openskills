@@ -42,7 +42,7 @@ def prompt_for_selection(message: str, choices: list[dict[str, Any]]) -> list[st
             return [choice['value'] for choice in choices]
 
 
-async def sync_agents_md(yes: bool = False, output: str | None = None) -> None:
+def sync_agents_md(yes: bool = False, output: str | None = None) -> None:
     """
     Sync installed skills to a markdown file
     
