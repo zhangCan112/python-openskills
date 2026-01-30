@@ -102,11 +102,10 @@ if %FOUND%==0 (
 )
 
 echo [5/5] Creating startup script...
-REM Create convenient startup script
+REM Create convenient startup script with direct path to executable
 echo @echo off > openskills.bat
-echo call .venv\Scripts\activate.bat >> openskills.bat
-echo openskills %%* >> openskills.bat
-echo deactivate >> openskills.bat
+echo echo Running OpenSkills from virtual environment... >> openskills.bat
+echo %%~dp0.venv\Scripts\openskills.exe %%* >> openskills.bat
 
 echo.
 echo ========================================
