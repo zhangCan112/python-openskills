@@ -73,7 +73,7 @@ def sync_agents_md(yes: bool = False, output: str | None = None) -> None:
     
     if not skills:
         click.echo("No skills installed. Install skills first:")
-        click.echo(f"  {click.style('npx openskills install anthropics/skills --project', fg='cyan')}")
+        click.echo(f"  {click.style('openskills install anthropics/skills --project', fg='cyan')}")
         return
     
     # Interactive mode by default (unless -y flag)

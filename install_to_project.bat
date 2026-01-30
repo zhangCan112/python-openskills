@@ -44,13 +44,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Enter target project directory
-pushd "%TARGET_PROJECT%"
-if errorlevel 1 (
-    echo [Error] Cannot enter target project directory: %TARGET_PROJECT%
-    pause
-    exit /b 1
-)
+REM Get absolute path of OpenSkills project BEFORE changing directory
+set SCRIPT_DIR=%~dp0
 
 echo [1/5] Creating virtual environment in target project...
 if exist ".venv" (
@@ -70,9 +65,6 @@ echo [2/5] Activating virtual environment...
 call .venv\Scripts\activate.bat
 
 echo [3/5] Installing OpenSkills...
-REM Get absolute path of current script directory
-set SCRIPT_DIR=%~dp0
-
 pip install -e "%SCRIPT_DIR%."
 if errorlevel 1 (
     echo [Error] Failed to install OpenSkills.

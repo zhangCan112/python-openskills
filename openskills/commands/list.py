@@ -18,8 +18,8 @@ def list_skills() -> None:
     if not skills:
         click.echo('No skills installed.\n')
         click.echo('Install skills:')
-        click.echo(f"  {click.style('npx openskills install anthropics/skills', fg='cyan')}         {click.style('# Project (default)', dim=True)}")
-        click.echo(f"  {click.style('npx openskills install owner/skill --global', fg='cyan')}     {click.style('# Global (advanced)', dim=True)}")
+        click.echo(f"  {click.style('openskills install anthropics/skills', fg='cyan')}         {click.style('# Project (default)', dim=True)}")
+        click.echo(f"  {click.style('openskills install owner/skill --global', fg='cyan')}     {click.style('# Global (advanced)', dim=True)}")
         return
     
     # Sort: project skills first, then global, alphabetically within each

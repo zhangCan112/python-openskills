@@ -485,6 +485,6 @@ def install_skill(source: str, options: InstallOptions) -> None:
 
 def print_post_install_hints(is_project: bool) -> None:
     """Print post-install hints"""
-    click.echo(f"\n{click.style('Read skill:', dim=True)} {click.style('npx openskills read <skill-name>', fg='cyan')}")
+    click.echo(f"\n{click.style('Read skill:', dim=True)} {click.style('openskills read <skill-name>', fg='cyan')}")
     if is_project:
-        click.echo(f"{click.style('Sync to AGENTS.md:', dim=True)} {click.style('npx openskills sync', fg='cyan')}")
+        click.echo(f"{click.style('Sync to AGENTS.md:', dim=True)} {click.style('openskills sync', fg='cyan')}")

@@ -57,7 +57,7 @@ def read_skill(skill_names: str | list[str]) -> None:
         click.echo('  ~/.agent/skills/ (global universal)', err=True)
         click.echo('  .claude/skills/ (project)', err=True)
         click.echo('  ~/.claude/skills/ (global)', err=True)
-        click.echo('\nInstall skills: npx openskills install owner/repo', err=True)
+        click.echo('\nInstall skills: openskills install owner/repo', err=True)
         sys.exit(1)
     
     for item in resolved:

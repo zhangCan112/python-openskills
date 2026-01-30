@@ -40,11 +40,8 @@ fi
 
 echo "[Check] Python version: $(python3 --version)"
 
-# Enter target project directory
-cd "$TARGET_PROJECT" || {
-    echo "[Error] Cannot enter target project directory: $TARGET_PROJECT"
-    exit 1
-}
+# Get absolute path of OpenSkills project BEFORE changing directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "[1/5] Creating virtual environment in target project..."
 if [ -d ".venv" ]; then
@@ -62,9 +59,6 @@ echo "[2/5] Activating virtual environment..."
 source .venv/bin/activate
 
 echo "[3/5] Installing OpenSkills..."
-# Get absolute path of current script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 pip install -e "$SCRIPT_DIR"
 if [ $? -ne 0 ]; then
     echo "[Error] Failed to install OpenSkills."

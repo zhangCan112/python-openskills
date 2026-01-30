@@ -29,8 +29,8 @@ async def update_skills(skill_names: str | list[str] | None) -> None:
     if not skills:
         click.echo("No skills installed.\n")
         click.echo("Install skills:")
-        click.echo(f"  {click.style('npx openskills install anthropics/skills', fg='cyan')}         {click.style('# Project (default)', dim=True)}")
-        click.echo(f"  {click.style('npx openskills install owner/skill --global', fg='cyan')}     {click.style('# Global (advanced)', dim=True)}")
+        click.echo(f"  {click.style('openskills install anthropics/skills', fg='cyan')}         {click.style('# Project (default)', dim=True)}")
+        click.echo(f"  {click.style('openskills install owner/skill --global', fg='cyan')}     {click.style('# Global (advanced)', dim=True)}")
         return
     
     targets = skills
@@ -131,7 +131,7 @@ async def update_skills(skill_names: str | list[str] | None) -> None:
     
     if missing_metadata:
         click.echo(click.style(f"Missing source metadata ({len(missing_metadata)}): {', '.join(missing_metadata)}", fg='yellow'))
-        click.echo(click.style("Re-install these skills once to enable updates (e.g., `npx openskills install <source>`).", dim=True))
+        click.echo(click.style("Re-install these skills once to enable updates (e.g., `openskills install <source>`).", dim=True))
     if missing_local_source:
         click.echo(click.style(f"Local source missing ({len(missing_local_source)}): {', '.join(missing_local_source)}", fg='yellow'))
     if missing_local_skill_file:
