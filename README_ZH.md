@@ -2,6 +2,8 @@
 
 OpenSkills的Python实现 - 通用的AI编码代理技能加载器，用于安装和管理Anthropic SKILL.md格式的技能。
 
+**[English](README.md)**
+
 ## 安装
 
 本项目提供两种安装方式：
@@ -182,6 +184,25 @@ openskills rm skill-name
 # 如果使用方式2，请在命令前加上 python -m openskills.cli
 ```
 
+### 导出到其他AI工具（兼容性）
+
+对于不支持AGENTS.md的AI工具，将技能导出到它们的配置文件中：
+
+```bash
+# 导出到GitHub Copilot（创建.github/instructions/openskills.instructions.md）
+openskills compat copilot
+
+# 导出到Cline（创建.clinerules/agents.md）
+openskills compat cline
+
+# 使用自定义源文件
+openskills compat copilot --source CUSTOM_AGENTS.md
+
+# 如果使用方式2，请在命令前加上 python -m openskills.cli
+```
+
+**注意**: 运行 `openskills sync` 后，所有配置的目标工具都会自动更新。
+
 ## 技能目录结构
 
 OpenSkills在以下位置查找技能（按优先级）：
@@ -203,6 +224,7 @@ OpenSkills在以下位置查找技能（按优先级）：
 | 同步技能 | `openskills.bat sync`<br>`./openskills.sh sync` | `python -m openskills.cli sync` |
 | 管理技能 | `openskills.bat manage`<br>`./openskills.sh manage` | `python -m openskills.cli manage` |
 | 删除技能 | `openskills.bat remove <skill>`<br>`./openskills.sh remove <skill>` | `python -m openskills.cli remove <skill>` |
+| 导出到AI工具 | `openskills.bat compat <target>`<br>`./openskills.sh compat <target>` | `python -m openskills.cli compat <target>` |
 
 ## 与TypeScript版本的差异
 
@@ -241,6 +263,7 @@ python-openskills/
 │   │   ├── remove.py
 │   │   ├── update.py
 │   │   ├── sync.py
+│   │   ├── compat.py       # 导出到其他AI工具
 │   │   └── manage.py
 │   └── utils/             # 工具模块
 │       ├── dirs.py
