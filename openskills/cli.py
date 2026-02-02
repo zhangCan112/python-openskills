@@ -10,7 +10,8 @@ from openskills.commands import (
     remove_skill,
     update_skills,
     sync_agents_md,
-    manage_skills
+    manage_skills,
+    compat_export
 )
 from openskills.types import InstallOptions
 
@@ -95,6 +96,14 @@ def manage():
 def rm(skill_name):
     """Remove specific skill"""
     remove_skill(skill_name)
+
+
+@cli.command()
+@click.argument('target', type=click.Choice(['copilot', 'cline']))
+@click.option('--source', '-s', help='Source file path (default: AGENTS.md)')
+def compat(target, source):
+    """Export AGENTS.md to target AI tool (for compatibility)"""
+    compat_export(target, source)
 
 
 if __name__ == '__main__':

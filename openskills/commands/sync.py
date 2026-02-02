@@ -15,6 +15,7 @@ from openskills.utils import (
     replace_skills_section,
     remove_skills_section
 )
+from openskills.commands.compat import sync_to_targets
 
 
 def prompt_for_selection(message: str, choices: list[dict[str, Any]]) -> list[str]:
@@ -108,7 +109,7 @@ def sync_agents_md(yes: bool = False, output: str | None = None) -> None:
                 with open(output_path, 'w', encoding='utf-8') as f:
                     f.write(updated)
                 
-                click.echo(click.style(f"✅ Removed all skills from {output_name}", fg='green'))
+                click.echo(click.style(f"[OK] Removed all skills from {output_name}", fg='green'))
                 return
             
             # Filter skills to selected ones
@@ -130,6 +131,9 @@ def sync_agents_md(yes: bool = False, output: str | None = None) -> None:
     had_markers = '<skills_system' in content or '<!-- SKILLS_TABLE_START -->' in content
     
     if had_markers:
-        click.echo(click.style(f"✅ Synced {len(skills)} skill(s) to {output_name}", fg='green'))
+        click.echo(click.style(f"[OK] Synced {len(skills)} skill(s) to {output_name}", fg='green'))
     else:
-        click.echo(click.style(f"✅ Added skills section to {output_name} ({len(skills)} skill(s))", fg='green'))
+        click.echo(click.style(f"[OK] Added skills section to {output_name} ({len(skills)} skill(s))", fg='green'))
+    
+    # Sync to active target tools (copilot, cline, etc.)
+    sync_to_targets(skills, updated)

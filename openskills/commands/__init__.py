@@ -9,6 +9,7 @@ from openskills.commands.install import install_skill
 from openskills.commands.update import update_skills
 from openskills.commands.sync import sync_agents_md
 from openskills.commands.manage import manage_skills
+from openskills.commands.compat import compat_export
 
 __all__ = [
     'list_skills',
@@ -18,4 +19,5 @@ __all__ = [
     'update_skills',
     'sync_agents_md',
     'manage_skills',
+    'compat_export',
 ]

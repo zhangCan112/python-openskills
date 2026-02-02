@@ -184,6 +184,25 @@ openskills rm skill-name
 # If using Method 2, add python -m openskills.cli before command
 ```
 
+### Export to Other AI Tools (Compatibility)
+
+For AI tools that don't support AGENTS.md, export skills to their configuration files:
+
+```bash
+# Export to GitHub Copilot (creates .github/instructions/openskills.instructions.md)
+openskills compat copilot
+
+# Export to Cline (creates .clinerules/agents.md)
+openskills compat cline
+
+# Use custom source file
+openskills compat copilot --source CUSTOM_AGENTS.md
+
+# If using Method 2, add python -m openskills.cli before command
+```
+
+**Note**: After running `openskills sync`, all configured target tools will be automatically updated.
+
 ## Skill Directory Structure
 
 OpenSkills looks for skills in the following locations (in priority order):
@@ -195,7 +214,7 @@ OpenSkills looks for skills in the following locations (in priority order):
 
 ## Quick Reference
 
-| Operation | Install to Project (Method 1) | Direct Use (Method 2) |
+| Operation | Install to Project (Method1) | Direct Use (Method 2) |
 |-----------|------------------------------|----------------------|
 | View Help | `openskills.bat --help`<br>`./openskills.sh --help` | `python -m openskills.cli --help` |
 | List Skills | `openskills.bat list`<br>`./openskills.sh list` | `python -m openskills.cli list` |
@@ -205,6 +224,7 @@ OpenSkills looks for skills in the following locations (in priority order):
 | Sync Skills | `openskills.bat sync`<br>`./openskills.sh sync` | `python -m openskills.cli sync` |
 | Manage Skills | `openskills.bat manage`<br>`./openskills.sh manage` | `python -m openskills.cli manage` |
 | Remove Skill | `openskills.bat remove <skill>`<br>`./openskills.sh remove <skill>` | `python -m openskills.cli remove <skill>` |
+| Export to AI Tools | `openskills.bat compat <target>`<br>`./openskills.sh compat <target>` | `python -m openskills.cli compat <target>` |
 
 ## Differences from TypeScript Version
 
@@ -243,6 +263,7 @@ python-openskills/
 │   │   ├── remove.py
 │   │   ├── update.py
 │   │   ├── sync.py
+│   │   ├── compat.py       # Export to other AI tools
 │   │   └── manage.py
 │   └── utils/             # Utility modules
 │       ├── dirs.py
