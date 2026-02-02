@@ -15,7 +15,7 @@ TARGETS = {
         'format': 'markdown'
     },
     'cline': {
-        'path': '.clinerules/agents.md',
+        'path': '.clinerules/openskills.md',
         'description': 'Cline',
         'format': 'text'
     }
@@ -49,6 +49,19 @@ def compat_export(target: str, source: str | None = None) -> None:
     # Read source content
     with open(source_path, 'r', encoding='utf-8') as f:
         content = f.read()
+    
+    # Add YAML frontmatter for Copilot compatibility
+    if target == 'copilot':
+        # Check if content already has YAML frontmatter
+        if not content.startswith('---'):
+            header = f"""---
+description: OpenSkills compatibility instructions for GitHub Copilot
+name: openskills
+applyTo: "**"
+---
+
+"""
+            content = header + content
     
     # Create target directory if needed
     target_dir = os.path.dirname(target_path)
@@ -117,8 +130,22 @@ def sync_to_targets(skills: list[Any], source_content: str) -> None:
         if target_dir and not os.path.exists(target_dir):
             os.makedirs(target_dir, exist_ok=True)
         
+        # Add YAML frontmatter for Copilot compatibility
+        content_to_write = source_content
+        if target == 'copilot':
+            # Check if content already has YAML frontmatter
+            if not source_content.startswith('---'):
+                header = f"""---
+description: OpenSkills compatibility instructions for GitHub Copilot
+name: openskills
+applyTo: "**"
+---
+
+"""
+                content_to_write = header + source_content
+        
         # Write updated content
         with open(target_path, 'w', encoding='utf-8') as f:
-            f.write(source_content)
+            f.write(content_to_write)
         
         click.echo(click.style(f"  [OK] Updated {target_config['description']}: {target_path}", fg='green'))
