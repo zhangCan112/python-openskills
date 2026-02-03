@@ -24,11 +24,14 @@ def get_skills_dir(project_local: bool = False, universal: bool = False) -> str:
 def get_search_dirs() -> list[str]:
     """
     Get all searchable skill directories in priority order
-    Priority: project .agent > global .agent > project .claude > global .claude
+    Priority: project .cline > project .clinerules > project .claude > global .cline > project .agent > global .agent > global .claude
     """
     return [
-        os.path.join(os.getcwd(), '.agent/skills'),   # 1. Project universal (.agent)
-        os.path.join(Path.home(), '.agent/skills'),    # 2. Global universal (.agent)
-        os.path.join(os.getcwd(), '.claude/skills'),  # 3. Project claude
-        os.path.join(Path.home(), '.claude/skills'),   # 4. Global claude
+        os.path.join(os.getcwd(), '.cline/skills'),      # 1. Project cline (recommended)
+        os.path.join(os.getcwd(), '.clinerules/skills'),  # 2. Project clinerules
+        os.path.join(os.getcwd(), '.claude/skills'),      # 3. Project claude (for Claude Code compatibility)
+        os.path.join(Path.home(), '.cline/skills'),       # 4. Global cline
+        os.path.join(os.getcwd(), '.agent/skills'),       # 5. Project universal (.agent)
+        os.path.join(Path.home(), '.agent/skills'),       # 6. Global universal (.agent)
+        os.path.join(Path.home(), '.claude/skills'),      # 7. Global claude
     ]
