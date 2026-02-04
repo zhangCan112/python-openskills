@@ -10,6 +10,7 @@ from openskills.commands.update import update_skills
 from openskills.commands.sync import sync_agents_md
 from openskills.commands.manage import manage_skills
 from openskills.commands.compat import compat_export
+from openskills.commands.market import market_list, market_search
 
 __all__ = [
     'list_skills',
@@ -20,4 +21,6 @@ __all__ = [
     'sync_agents_md',
     'manage_skills',
     'compat_export',
+    'market_list',
+    'market_search',
 ]

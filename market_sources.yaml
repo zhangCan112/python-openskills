@@ -1,0 +1,11 @@
+# Market Sources Configuration
+# Add repositories here to collect skills from the marketplace
+
+sources:
+  # Test source (using local skill-creator for testing)
+  - repo: "zhangCan112/python-openskills"
+    branch: "main"
+  
+  # Add your repositories below
+  # - repo: "owner/repo"
+  #   branch: "main"

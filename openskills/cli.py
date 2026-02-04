@@ -11,7 +11,9 @@ from openskills.commands import (
     update_skills,
     sync_agents_md,
     manage_skills,
-    compat_export
+    compat_export,
+    market_list,
+    market_search
 )
 from openskills.types import InstallOptions
 
@@ -104,6 +106,25 @@ def rm(skill_name):
 def compat(target, source):
     """Export AGENTS.md to target AI tool (for compatibility)"""
     compat_export(target, source)
+
+
+@cli.group()
+def market():
+    """Market commands for searching and listing available skills"""
+    pass
+
+
+@market.command()
+def list():
+    """List all available skills in the market"""
+    market_list()
+
+
+@market.command()
+@click.argument('keyword')
+def search(keyword):
+    """Search for skills in the market by keyword"""
+    market_search(keyword)
 
 
 if __name__ == '__main__':

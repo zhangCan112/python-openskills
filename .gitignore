@@ -136,3 +136,9 @@ Thumbs.db
 # OpenSkills
 openskills.bat
 openskills.sh
+
+# Market skills (optional - uncomment if you don't want to commit market data)
+# marketskills/
+
+# Temporary directories for market collection
+market_skill_*/

@@ -19,6 +19,7 @@ from openskills.utils import (
     write_skill_metadata,
 )
 from openskills.utils.marketplace_skills import ANTHROPIC_MARKETPLACE_SKILLS
+from openskills.utils.market import find_skill_by_name
 from openskills.utils.yaml import has_valid_frontmatter, extract_yaml_field
 
 
@@ -179,7 +180,7 @@ def install_single_local_skill(
     )
     write_skill_metadata(target_path, metadata)
     
-    click.echo(click.style(f"✅ Installed: {skill_name}", fg='green'))
+    click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
     click.echo(f"   Location: {target_path}")
 
 
@@ -306,10 +307,10 @@ def install_from_repo(
         
         write_skill_metadata(target_path, metadata)
         
-        click.echo(click.style(f"✅ Installed: {skill_name}", fg='green'))
-        installed_count += 1
+        click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
+        installed_count +=1
     
-    click.echo(click.style(f"\n✅ Installation complete: {installed_count} skill(s) installed", fg='green'))
+    click.echo(click.style(f"\n[OK] Installation complete: {installed_count} skill(s) installed", fg='green'))
 
 
 def prompt_for_selection(message: str, choices: list[dict[str, Any]]) -> list[str]:
@@ -337,12 +338,76 @@ def prompt_for_selection(message: str, choices: list[dict[str, Any]]) -> list[st
             return [choice['value'] for choice in choices]
 
 
+def try_install_from_market(skill_name: str, options: InstallOptions) -> bool:
+    """
+    Try to install skill from market by name
+    
+    Args:
+        skill_name: Name of the skill to install
+        options: Installation options
+        
+    Returns:
+        True if skill was found and installed, False otherwise
+    """
+    from openskills.utils.market import find_skill_by_name
+    
+    # Search for skill in market
+    matched_skills = find_skill_by_name(skill_name)
+    
+    if not matched_skills:
+        return False
+    
+    if len(matched_skills) == 1:
+        # Unique skill found - install it directly
+        skill = matched_skills[0]
+        click.echo(f"Found skill in market: {click.style(skill.name, fg='green')}")
+        click.echo(f"Description: {skill.description}")
+        click.echo(f"Source: {skill.source}")
+        click.echo()
+        
+        # Install using the skill's source
+        install_skill(skill.source, options)
+        return True
+    else:
+        # Multiple skills with same name - let user choose
+        click.echo(click.style(f"Found multiple skills named '{skill_name}':\n", fg='yellow'))
+        
+        for i, skill in enumerate(matched_skills, 1):
+            click.echo(f"{click.style(str(i), bold=True)}. {skill.name}")
+            click.echo(f"   Source: {skill.source}")
+            if skill.description:
+                click.echo(f"   Description: {skill.description}")
+            if skill.author:
+                click.echo(f"   Author: {skill.author}")
+            if skill.version:
+                click.echo(f"   Version: {skill.version}")
+            click.echo()
+        
+        # Prompt for selection
+        while True:
+            try:
+                choice = click.prompt(
+                    f"Select which skill to install [1-{len(matched_skills)}]",
+                    type=int
+                )
+                if 1 <= choice <= len(matched_skills):
+                    selected_skill = matched_skills[choice - 1]
+                    click.echo()
+                    install_skill(selected_skill.source, options)
+                    return True
+                else:
+                    click.echo(click.style("Invalid selection. Please try again.", fg='red'))
+            except click.exceptions.Abort:
+                click.echo("\nInstallation cancelled.")
+                return False
+
+
 def install_skill(source: str, options: InstallOptions) -> None:
     """
     Install skill from local path, GitHub, or Git URL
     
     Args:
-        source: Source to install from (URL or local path)
+        source: Source to install from (URL, local path, or skill name)
         options: Installation options
     """
     folder = '.agent/skills' if options.universal else '.claude/skills'
@@ -362,6 +427,11 @@ def install_skill(source: str, options: InstallOptions) -> None:
     else:
         click.echo(click.style(f"Global install selected ({global_location}). Omit --global for {project_location}.", dim=True))
     click.echo('')
+    
+    # Try to install from market first if source is not a URL or local path
+    if not is_local_path(source) and not is_git_url(source):
+        if try_install_from_market(source, options):
+            return
     
     # Handle local path installation
     if is_local_path(source):
@@ -416,7 +486,7 @@ def install_skill(source: str, options: InstallOptions) -> None:
         }
         
         try:
-            click.echo("Cloning repository...")
+            click.echo(f"Cloning repository to: {click.style(temp_dir, dim=True)}")
             subprocess.run(
                 ['git', 'clone', '--depth', '1', '--quiet', repo_url, os.path.join(temp_dir, 'repo')],
                 check=True,
@@ -473,7 +543,7 @@ def install_skill(source: str, options: InstallOptions) -> None:
             )
             write_skill_metadata(target_path, metadata)
             
-            click.echo(click.style(f"✅ Installed: {skill_name}", fg='green'))
+            click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
             click.echo(f"   Location: {target_path}")
         else:
             # Install from repo (may be multiple skills)
