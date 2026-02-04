@@ -18,6 +18,7 @@ from pathlib import Path
 SKILL_TEMPLATE = """---
 name: {skill_name}
 description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+tags: [TODO: Optional comma-separated tags for categorization in the market, e.g., "development,tools" or "pdf,document,processing"]
 ---
 
 # {skill_title}
@@ -263,7 +264,9 @@ def init_skill(skill_name, path):
     # Print next steps
     print(f"\n✅ Skill '{skill_name}' initialized successfully at {skill_dir}")
     print("\nNext steps:")
-    print("1. Edit SKILL.md to complete the TODO items and update the description")
+    print("1. Edit SKILL.md to complete the TODO items:")
+    print("   - Add a clear description explaining what the skill does and when to use it")
+    print("   - Add tags for categorization (optional but recommended for market skills)")
     print("2. Customize or delete the example files in scripts/, references/, and assets/")
     print("3. Run the validator when ready to check the skill structure")
 

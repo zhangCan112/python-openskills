@@ -1,6 +1,7 @@
 ---
 name: skill-creator
 description: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.
+tags: development,tools,workflow
 license: Complete terms in LICENSE.txt
 ---
 
@@ -65,7 +66,7 @@ skill-name/
 
 Every SKILL.md consists of:
 
-- **Frontmatter** (YAML): Contains `name` and `description` fields. These are the only fields that Claude reads to determine when the skill gets used, thus it is very important to be clear and comprehensive in describing what the skill is, and when it should be used.
+- **Frontmatter** (YAML): Contains `name` and `description` fields (required), and `tags` field (optional). The `name` and `description` are the only fields that Claude reads to determine when the skill gets used, thus it is very important to be clear and comprehensive in describing what the skill is, and when it should be used. The `tags` field is used for categorizing skills in the market and helps users filter skills by topic or purpose.
 - **Body** (Markdown): Instructions and guidance for using the skill. Only loaded AFTER the skill triggers (if at all).
 
 #### Bundled Resources (optional)
@@ -305,11 +306,20 @@ Any example files and directories not needed for the skill should be deleted. Th
 
 Write the YAML frontmatter with `name` and `description`:
 
-- `name`: The skill name
+- `name`: The skill name (required)
 - `description`: This is the primary triggering mechanism for your skill, and helps Claude understand when to use the skill.
   - Include both what the Skill does and specific triggers/contexts for when to use it.
   - Include all "when to use" information here - Not in the body. The body is only loaded after triggering, so "When to Use This Skill" sections in the body are not helpful to Claude.
   - Example description for a `docx` skill: "Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction. Use when Claude needs to work with professional documents (.docx files) for: (1) Creating new documents, (2) Modifying or editing content, (3) Working with tracked changes, (4) Adding comments, or any other document tasks"
+- `tags`: Optional comma-separated list of tags for categorizing the skill in the market
+  - Tags help users filter and discover skills by topic or purpose
+  - Use short, descriptive keywords (e.g., "development,tools,workflow" or "pdf,document,processing")
+  - Keep tags lowercase and use commas without spaces for consistency
+  - Example tags for different skill types:
+    - Development tools: "development,tools,workflow"
+    - Data processing: "data,analysis,python"
+    - Document handling: "pdf,docx,document"
+    - API integration: "api,rest,integration"
 
 Do not include any other fields in YAML frontmatter.
 
