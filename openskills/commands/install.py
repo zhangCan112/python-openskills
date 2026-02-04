@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import hashlib
 from pathlib import Path
 from typing import Any
 import click
@@ -477,84 +478,145 @@ def install_skill(source: str, options: InstallOptions) -> None:
             click.echo("Expected: owner/repo, owner/repo/skill-name, git URL, or local path")
             sys.exit(1)
     
-    # Clone and install from git
-    with tempfile.TemporaryDirectory() as temp_dir:
-        source_info = {
-            'source': source,
-            'sourceType': 'git',
-            'repoUrl': repo_url
-        }
+    # Get or clone repository from cache
+    repo_dir = get_cached_repo(repo_url)
+    
+    source_info = {
+        'source': source,
+        'sourceType': 'git',
+        'repoUrl': repo_url
+    }
+    
+    if skill_subpath:
+        # Install specific skill from subpath
+        skill_dir = os.path.join(repo_dir, skill_subpath)
+        skill_md_path = os.path.join(skill_dir, 'SKILL.md')
         
-        try:
-            click.echo(f"Cloning repository to: {click.style(temp_dir, dim=True)}")
-            subprocess.run(
-                ['git', 'clone', '--depth', '1', '--quiet', repo_url, os.path.join(temp_dir, 'repo')],
-                check=True,
-                capture_output=True
-            )
-            click.echo("Repository cloned")
-        except subprocess.CalledProcessError as e:
-            click.echo(click.style("Failed to clone repository", fg='red'))
-            if e.stderr:
-                click.echo(click.style(e.stderr.decode().strip(), dim=True))
-            click.echo(click.style("\nTip: For private repos, ensure git SSH keys or credentials are configured", fg='yellow'))
+        if not os.path.exists(skill_md_path):
+            click.echo(click.style(f"Error: SKILL.md not found at {skill_subpath}", fg='red'))
             sys.exit(1)
         
-        repo_dir = os.path.join(temp_dir, 'repo')
+        with open(skill_md_path, 'r', encoding='utf-8') as f:
+            content = f.read()
         
-        if skill_subpath:
-            # Install specific skill from subpath
-            skill_dir = os.path.join(repo_dir, skill_subpath)
-            skill_md_path = os.path.join(skill_dir, 'SKILL.md')
-            
-            if not os.path.exists(skill_md_path):
-                click.echo(click.style(f"Error: SKILL.md not found at {skill_subpath}", fg='red'))
-                sys.exit(1)
-            
-            with open(skill_md_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            if not has_valid_frontmatter(content):
-                click.echo(click.style("Error: Invalid SKILL.md (missing YAML frontmatter)", fg='red'))
-                sys.exit(1)
-            
-            skill_name = os.path.basename(skill_subpath)
-            target_path = os.path.join(target_dir, skill_name)
-            
-            should_install = warn_if_conflict(skill_name, target_path, is_project, options.yes)
-            if not should_install:
-                click.echo(click.style(f"Skipped: {skill_name}", fg='yellow'))
-                return
-            
-            os.makedirs(target_dir, exist_ok=True)
-            
-            if not is_path_inside(target_path, target_dir):
-                click.echo(click.style("Security error: Installation path outside target directory", fg='red'))
-                sys.exit(1)
-            
-            shutil.copytree(skill_dir, target_path, dirs_exist_ok=True)
-            
-            metadata = SkillSourceMetadata(
-                source=source_info['source'],
-                source_type=SkillSourceType.GIT,
-                repo_url=repo_url,
-                subpath=skill_subpath,
-                installed_at=None
-            )
-            write_skill_metadata(target_path, metadata)
-            
-            click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
-            click.echo(f"   Location: {target_path}")
-        else:
-            # Install from repo (may be multiple skills)
-            repo_name = get_repo_name(repo_url)
-            install_from_repo(repo_dir, target_dir, options, repo_name, source_info)
+        if not has_valid_frontmatter(content):
+            click.echo(click.style("Error: Invalid SKILL.md (missing YAML frontmatter)", fg='red'))
+            sys.exit(1)
+        
+        skill_name = os.path.basename(skill_subpath)
+        target_path = os.path.join(target_dir, skill_name)
+        
+        should_install = warn_if_conflict(skill_name, target_path, is_project, options.yes)
+        if not should_install:
+            click.echo(click.style(f"Skipped: {skill_name}", fg='yellow'))
+            return
+        
+        os.makedirs(target_dir, exist_ok=True)
+        
+        if not is_path_inside(target_path, target_dir):
+            click.echo(click.style("Security error: Installation path outside target directory", fg='red'))
+            sys.exit(1)
+        
+        shutil.copytree(skill_dir, target_path, dirs_exist_ok=True)
+        
+        metadata = SkillSourceMetadata(
+            source=source_info['source'],
+            source_type=SkillSourceType.GIT,
+            repo_url=repo_url,
+            subpath=skill_subpath,
+            installed_at=None
+        )
+        write_skill_metadata(target_path, metadata)
+        
+        click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
+        click.echo(f"   Location: {target_path}")
+    else:
+        # Install from repo (may be multiple skills)
+        repo_name = get_repo_name(repo_url)
+        install_from_repo(repo_dir, target_dir, options, repo_name, source_info)
     
     print_post_install_hints(is_project)
 
 
+def get_cache_dir() -> str:
+    """Get the cache directory for cloned repositories"""
+    cache_dir = os.path.join(str(Path.home()), '.openskills', 'cache')
+    os.makedirs(cache_dir, exist_ok=True)
+    return cache_dir
+
+
+def get_cache_key(repo_url: str) -> str:
+    """Generate a cache key from repo URL"""
+    # Simple hash of the URL to create a unique directory name
+    # Using SHA256 to avoid issues with special characters in URLs
+    return hashlib.sha256(repo_url.encode()).hexdigest()[:16]
+
+
+def get_cached_repo(repo_url: str) -> str:
+    """
+    Get or clone a repository from cache.
+    Returns the path to the cached repository.
+    """
+    cache_dir = get_cache_dir()
+    cache_key = get_cache_key(repo_url)
+    cache_path = os.path.join(cache_dir, cache_key)
+    
+    # Check if cache exists
+    if os.path.exists(cache_path):
+        # Cache exists, try to update it
+        try:
+            click.echo(click.style(f"Updating cached repository...", dim=True))
+            subprocess.run(
+                ['git', 'fetch', '--quiet'],
+                cwd=cache_path,
+                check=True,
+                capture_output=True
+            )
+            subprocess.run(
+                ['git', 'checkout', '--quiet', 'main'],
+                cwd=cache_path,
+                check=True,
+                capture_output=True
+            )
+            subprocess.run(
+                ['git', 'pull', '--quiet'],
+                cwd=cache_path,
+                check=True,
+                capture_output=True
+            )
+            click.echo(click.style(f"Cache updated", fg='green'))
+        except subprocess.CalledProcessError:
+            # Update failed, remove and re-clone
+            click.echo(click.style("Cache update failed, recloning...", fg='yellow'))
+            shutil.rmtree(cache_path, ignore_errors=True)
+            return clone_to_cache(repo_url, cache_path)
+        
+        return cache_path
+    else:
+        # Cache doesn't exist, clone it
+        return clone_to_cache(repo_url, cache_path)
+
+
+def clone_to_cache(repo_url: str, cache_path: str) -> str:
+    """Clone a repository to cache directory"""
+    try:
+        click.echo(click.style(f"Cloning repository to cache...", dim=True))
+        subprocess.run(
+            ['git', 'clone', '--depth', '1', '--quiet', repo_url, cache_path],
+            check=True,
+            capture_output=True
+        )
+        click.echo(click.style(f"Repository cloned to cache", fg='green'))
+        return cache_path
+    except subprocess.CalledProcessError as e:
+        click.echo(click.style("Failed to clone repository", fg='red'))
+        if e.stderr:
+            click.echo(click.style(e.stderr.decode().strip(), dim=True))
+        sys.exit(1)
+
+
 def print_post_install_hints(is_project: bool) -> None:
-    """Print post-install hints"""
+    """Print post install hints"""
     click.echo(f"\n{click.style('Read skill:', dim=True)} {click.style('openskills read <skill-name>', fg='cyan')}")
     if is_project:
         click.echo(f"{click.style('Sync to AGENTS.md:', dim=True)} {click.style('openskills sync', fg='cyan')}")
