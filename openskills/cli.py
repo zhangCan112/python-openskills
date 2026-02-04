@@ -115,9 +115,10 @@ def market():
 
 
 @market.command()
-def list():
-    """List all available skills in the market"""
-    market_list()
+@click.option('--tag', '-t', multiple=True, help='Filter by tag (can be used multiple times)')
+def list(tag):
+    """List all available skills in market (optional: filter by tags)"""
+    market_list(tags=tag if tag else None)
 
 
 @market.command()

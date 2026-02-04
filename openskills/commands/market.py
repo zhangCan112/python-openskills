@@ -10,9 +10,17 @@ from openskills.utils.market import (
 )
 
 
-def market_list():
-    """List all market skills"""
+def market_list(tags=None):
+    """List all market skills (optional: filter by tags)"""
     skills = list_all_skills()
+    
+    # Filter by tags if provided
+    if tags:
+        tags_list = list(tags)
+        skills = [
+            skill for skill in skills
+            if all(tag.lower() in (t.lower() for t in skill.tags) for tag in tags_list)
+        ]
     
     if not skills:
         click.echo(click.style("No skills found in market", fg='yellow'))
