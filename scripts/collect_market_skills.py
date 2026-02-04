@@ -117,27 +117,63 @@ def extract_skill_info(skill_dir: str, repo: str) -> Dict[str, Any] | None:
     return skill_info
 
 
-def find_skills_in_repo(repo_dir: str, repo: str) -> List[Dict[str, Any]]:
-    """Find all skills in a repository"""
+def find_skills_in_repo(repo_dir: str, repo: str, skillspaths: List[str] = None) -> List[Dict[str, Any]]:
+    """Find all skills in a repository
+    
+    Args:
+        repo_dir: Path to the repository root
+        repo: Repository identifier (e.g., "owner/repo")
+        skillspaths: Optional list of paths to search for skills. If None, search entire repo.
+    
+    Returns:
+        List of skill dictionaries
+    """
     skills = []
     
-    # Check for root skill
-    root_skill_path = os.path.join(repo_dir, 'SKILL.md')
-    if os.path.exists(root_skill_path):
-        skill_info = extract_skill_info(repo_dir, repo)
-        if skill_info:
-            skill_info['subpath'] = ''  # Root skill
-            skills.append(skill_info)
-    
-    # Recursively find skills in subdirectories
-    for root, dirs, files in os.walk(repo_dir):
-        if 'SKILL.md' in files and root != repo_dir:
-            skill_info = extract_skill_info(root, repo)
+    if skillspaths is None:
+        # Original behavior: search entire repository
+        # Check for root skill
+        root_skill_path = os.path.join(repo_dir, 'SKILL.md')
+        if os.path.exists(root_skill_path):
+            skill_info = extract_skill_info(repo_dir, repo)
             if skill_info:
-                # Calculate subpath relative to repo root
-                subpath = os.path.relpath(root, repo_dir)
-                skill_info['subpath'] = subpath.replace('\\', '/')  # Normalize path separators
+                skill_info['subpath'] = ''  # Root skill
                 skills.append(skill_info)
+        
+        # Recursively find skills in subdirectories
+        for root, dirs, files in os.walk(repo_dir):
+            if 'SKILL.md' in files and root != repo_dir:
+                skill_info = extract_skill_info(root, repo)
+                if skill_info:
+                    # Calculate subpath relative to repo root
+                    subpath = os.path.relpath(root, repo_dir)
+                    skill_info['subpath'] = subpath.replace('\\', '/')  # Normalize path separators
+                    skills.append(skill_info)
+    else:
+        # Search only in specified paths
+        for skillspath in skillspaths:
+            search_dir = os.path.join(repo_dir, skillspath)
+            if not os.path.exists(search_dir):
+                print(f"    [!] Warning: Path '{skillspath}' does not exist in repository")
+                continue
+            
+            # Check for skill at this path (if SKILL.md exists directly)
+            skill_md_path = os.path.join(search_dir, 'SKILL.md')
+            if os.path.exists(skill_md_path):
+                skill_info = extract_skill_info(search_dir, repo)
+                if skill_info:
+                    skill_info['subpath'] = skillspath.replace('\\', '/')
+                    skills.append(skill_info)
+            
+            # Recursively find skills in subdirectories of this path
+            for root, dirs, files in os.walk(search_dir):
+                if 'SKILL.md' in files and root != search_dir:
+                    skill_info = extract_skill_info(root, repo)
+                    if skill_info:
+                        # Calculate subpath relative to repo root
+                        subpath = os.path.relpath(root, repo_dir)
+                        skill_info['subpath'] = subpath.replace('\\', '/')
+                        skills.append(skill_info)
     
     return skills
 
@@ -179,8 +215,19 @@ def collect_from_source(source: Dict[str, Any], output_dir: str) -> None:
     """Collect skills from a single source"""
     repo = source['repo']
     branch = source.get('branch', None)
+    skillspath_config = source.get('skillspath', None)
     
     print(f"\n[Collecting] from: {repo}")
+    
+    # Normalize skillspath to list
+    skillspaths = None
+    if skillspath_config is not None:
+        if isinstance(skillspath_config, str):
+            skillspaths = [skillspath_config]
+        elif isinstance(skillspath_config, list):
+            skillspaths = skillspath_config
+        else:
+            print(f"  [!] Warning: Invalid skillspath type (expected string or list), ignoring")
     
     # Clone repository
     repo_dir = clone_repo(repo, branch)
@@ -193,7 +240,7 @@ def collect_from_source(source: Dict[str, Any], output_dir: str) -> None:
             branch = get_repo_branch(repo_dir)
         
         # Find all skills
-        skills = find_skills_in_repo(repo_dir, repo)
+        skills = find_skills_in_repo(repo_dir, repo, skillspaths)
         
         if skills:
             print(f"  Found {len(skills)} skill(s):")
@@ -204,7 +251,10 @@ def collect_from_source(source: Dict[str, Any], output_dir: str) -> None:
             # Save to market skills database
             save_market_skills(repo, branch, skills, output_dir)
         else:
-            print(f"  [!] No valid skills found in repository")
+            if skillspaths:
+                print(f"  [!] No valid skills found in specified paths: {skillspaths}")
+            else:
+                print(f"  [!] No valid skills found in repository")
     
     finally:
         # Clean up temp directory
