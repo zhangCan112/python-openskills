@@ -1,14 +1,14 @@
-# Skill Market 功能使用说明
+# Skill Market Usage Guide
 
-## 概述
+## Overview
 
-Skill Market 功能允许维护者从远端仓库收集 skills 信息，并让使用者通过简单的命令安装这些 skills。
+The Skill Market feature allows maintainers to collect skill information from remote repositories and enables users to install these skills with simple commands.
 
-## 维护者使用指南
+## Maintainer Guide
 
-### 1. 配置源仓库
+### 1. Configure Source Repositories
 
-编辑 `market_sources.yaml` 文件，添加要收集的仓库：
+Edit the `market_sources.yaml` file to add repositories to collect from:
 
 ```yaml
 sources:
@@ -18,79 +18,79 @@ sources:
     branch: "master"
 ```
 
-### 2. 收集 Skills
+### 2. Collect Skills
 
-运行收集脚本从配置的仓库中收集 skills 信息：
+Run the collection script to gather skill information from configured repositories:
 
 ```bash
 python scripts/collect_market_skills.py
 ```
 
-脚本会：
-- Clone 配置的仓库到临时目录
-- 解析每个仓库中的 SKILL.md 文件
-- 提取技能信息（名称、描述、版本、作者、标签等）
-- 保存到 `marketskills/owner_repo.json` 文件中
+The script will:
+- Clone configured repositories to a temporary directory
+- Parse SKILL.md files from each repository
+- Extract skill information (name, description, version, author, tags, etc.)
+- Save to `marketskills/owner_repo.json` files
 
-### 3. 更新 Market 数据
+### 3. Update Market Data
 
-当仓库有更新时，重新运行收集脚本即可更新 market 数据。
+When repositories have updates, simply rerun the collection script to update market data.
 
-## 使用者使用指南
+## User Guide
 
-### 1. 查看可用的 Skills
+### 1. View Available Skills
 
-#### 列出所有 skills
+#### List All Skills
 
 ```bash
 openskills market list
 ```
 
-#### 按 tag 过滤
+#### Filter by Tags
 
-支持通过 tag 过滤 skills：
+Filter skills by tags:
 
 ```bash
-# 单个 tag 过滤
+# Single tag filter
 openskills market list -t development
 
-# 多个 tag 过滤（AND 逻辑）
+# Multiple tag filter (AND logic)
 openskills market list -t development -t workflow
 ```
 
-**说明**：
-- `-t` 或 `--tag` 选项可以多次使用
-- 多个 tag 之间使用 AND 逻辑（skill 必须包含所有指定的 tags）
-- tag 过滤不区分大小写
+**Notes:**
+- `-t` or `--tag` option can be used multiple times
+- Multiple tags use AND logic (skill must contain all specified tags)
+- Tag filtering is case-insensitive
 
-### 2. 搜索 Skills
+### 2. Search Skills
 
-通过关键词搜索 skills：
+Search for skills by keyword:
 
 ```bash
 openskills market search <keyword>
 ```
 
-搜索范围包括：技能名称、描述、标签
+Search scope includes: skill name, description, tags
 
-### 3. 安装 Skills
+### 3. Install Skills
 
-#### 方法 1：通过 Skill 名称安装
+#### Method 1: Install by Skill Name
 
-如果知道 skill 名称，直接使用：
+If you know the skill name, use it directly:
 
 ```bash
 openskills install <skill-name>
 ```
 
-系统会：
-- 在 market 中查找该 skill
-- 如果找到唯一 skill，直接安装
-- 如果找到多个同名 skill，显示选项让你选择
+The system will:
+- Search for the skill in the market
+- If a unique skill is found, install it directly
+- If multiple skills with the same name are found, display options for you to choose
 
-#### 方法 2：通过 URL 安装
+#### Method 2: Install by URL
 
-仍然支持原有的安装方式：
+The original installation methods are still supported:
 
 ```bash
 openskills install owner/repo
@@ -98,42 +98,42 @@ openskills install owner/repo/skill-path
 openskills install https://github.com/owner/repo.git
 ```
 
-## 文件结构
+## File Structure
 
 ```
 python-openskills/
-├── market_sources.yaml           # Market 源配置（维护者编辑）
-├── marketskills/                  # Market 数据目录
-│   ├── owner_repo1.json          # 仓库 1 的 skills
-│   └── owner_repo2.json          # 仓库 2 的 skills
+├── market_sources.yaml           # Market source configuration (edited by maintainer)
+├── marketskills/                  # Market data directory
+│   ├── owner_repo1.json          # Skills from repository 1
+│   └── owner_repo2.json          # Skills from repository 2
 ├── scripts/
-│   └── collect_market_skills.py  # 收集脚本（维护者使用）
+│   └── collect_market_skills.py  # Collection script (used by maintainer)
 └── openskills/
     ├── utils/
-    │   └── market.py            # Market 数据管理
+    │   └── market.py            # Market data management
     └── commands/
-        └── market.py             # Market 命令
+        └── market.py             # Market commands
 ```
 
-## 注意事项
+## Important Notes
 
-1. **Market 数据更新**：维护者需要在仓库更新后重新运行收集脚本
-2. **同名 Skills**：当多个仓库中有同名 skill 时，安装时会显示选项让用户选择
-3. **Git 要求**：收集脚本需要系统安装 git 命令
-4. **临时文件**：收集过程中会创建临时目录，脚本会自动清理
+1. **Market Data Updates**: Maintainers need to rerun the collection script after repository updates
+2. **Duplicate Skills**: When multiple repositories have skills with the same name, installation will display options for user selection
+3. **Git Requirement**: The collection script requires git to be installed on the system
+4. **Temporary Files**: The collection process creates temporary directories which are automatically cleaned up by the script
 
-## 示例
+## Examples
 
-### 维护者操作
+### Maintainer Operations
 
 ```bash
-# 1. 编辑 market_sources.yaml，添加仓库
+# 1. Edit market_sources.yaml to add repositories
 vim market_sources.yaml
 
-# 2. 运行收集脚本
+# 2. Run collection script
 python scripts/collect_market_skills.py
 
-# 输出示例：
+# Output example:
 # ============================================================
 # Market Skills Collector
 # ============================================================
@@ -153,19 +153,19 @@ python scripts/collect_market_skills.py
 # ============================================================
 ```
 
-### 使用者操作
+### User Operations
 
 ```bash
-# 1. 查看所有可用的 skills
+# 1. View all available skills
 openskills market list
 
-# 2. 搜索特定的 skill
+# 2. Search for a specific skill
 openskills market search pdf
 
-# 3. 安装 skill
+# 3. Install skill
 openskills install pdf-reader
 
-# 4. 如果有同名 skill，会显示选项：
+# 4. If there are skills with the same name, options will be displayed:
 # Found multiple skills named 'pdf-reader':
 #
 # 1. pdf-reader
@@ -181,22 +181,22 @@ openskills install pdf-reader
 # Select which skill to install [1-2]: 1
 ```
 
-## 故障排除
+## Troubleshooting
 
-### 收集脚本失败
+### Collection Script Fails
 
-- 确保系统已安装 git
-- 检查仓库 URL 是否正确
-- 检查网络连接
+- Ensure git is installed on the system
+- Check if repository URLs are correct
+- Check network connection
 
-### 找不到 Skill
+### Skill Not Found
 
-- 运行 `openskills market list` 确认 skill 是否在 market 中
-- 检查 skill 名称拼写
-- 尝试使用搜索功能
+- Run `openskills market list` to confirm the skill exists in the market
+- Check spelling of skill name
+- Try using the search function
 
-### 安装失败
+### Installation Fails
 
-- 确保有写入权限
-- 检查磁盘空间
-- 查看错误信息获取更多详情
+- Ensure write permissions
+- Check disk space
+- View error messages for more details
