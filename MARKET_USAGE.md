@@ -40,11 +40,28 @@ python scripts/collect_market_skills.py
 
 ### 1. 查看可用的 Skills
 
-列出所有 market 中的 skills：
+#### 列出所有 skills
 
 ```bash
 openskills market list
 ```
+
+#### 按 tag 过滤
+
+支持通过 tag 过滤 skills：
+
+```bash
+# 单个 tag 过滤
+openskills market list -t development
+
+# 多个 tag 过滤（AND 逻辑）
+openskills market list -t development -t workflow
+```
+
+**说明**：
+- `-t` 或 `--tag` 选项可以多次使用
+- 多个 tag 之间使用 AND 逻辑（skill 必须包含所有指定的 tags）
+- tag 过滤不区分大小写
 
 ### 2. 搜索 Skills
 
