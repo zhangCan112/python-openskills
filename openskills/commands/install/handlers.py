@@ -9,6 +9,7 @@ from pathlib import Path
 import click
 from openskills.types import InstallOptions, SkillSourceType, SkillSourceMetadata
 from openskills.utils import has_valid_frontmatter, write_skill_metadata, get_skills_dir
+from openskills.utils.config import get_github_base_url
 from openskills.commands.install.validators import is_local_path, is_git_url, expand_path
 from openskills.commands.install.utils import get_repo_name, print_post_install_hints
 from openskills.commands.install.cache import get_cached_repo
@@ -94,21 +95,23 @@ def _install_from_git(source: str, target_dir: str, is_project: bool, options: I
     if is_git_url(source):
         # Check if it's a GitHub HTTPS URL with subpath
         # Format: https://github.com/owner/repo[/skill-path]
-        if source.startswith('https://github.com/'):
-            # Remove 'https://github.com/' prefix
-            path_part = source[len('https://github.com/'):]
+        github_base = get_github_base_url()
+        
+        if source.startswith(f'{github_base}/'):
+            # Remove 'https://host/' prefix
+            path_part = source[len(f'{github_base}/'):]
             parts = path_part.split('/')
             
             if len(parts) >= 2:
                 # First two parts are owner/repo
-                repo_url = f"https://github.com/{parts[0]}/{parts[1]}"
+                repo_url = f"{github_base}/{parts[0]}/{parts[1]}"
                 
                 # Remaining parts (if any) are the subpath
                 if len(parts) > 2:
                     skill_subpath = '/'.join(parts[2:])
             else:
                 click.echo(click.style("Error: Invalid GitHub URL format", fg='red'))
-                click.echo("Expected: https://github.com/owner/repo[/skill-path]")
+                click.echo(f"Expected: {github_base}/owner/repo[/skill-path]")
                 sys.exit(1)
         else:
             # Full git URL (SSH, other HTTPS, git://)
@@ -116,11 +119,12 @@ def _install_from_git(source: str, target_dir: str, is_project: bool, options: I
             repo_url = source
     else:
         # GitHub shorthand: owner/repo or owner/repo/skill-path
+        github_base = get_github_base_url()
         parts = source.split('/')
         if len(parts) == 2:
-            repo_url = f"https://github.com/{source}"
+            repo_url = f"{github_base}/{source}"
         elif len(parts) > 2:
-            repo_url = f"https://github.com/{parts[0]}/{parts[1]}"
+            repo_url = f"{github_base}/{parts[0]}/{parts[1]}"
             skill_subpath = '/'.join(parts[2:])
         else:
             click.echo(click.style("Error: Invalid source format", fg='red'))

@@ -6,6 +6,7 @@ import os
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from openskills.utils.config import get_github_base_url
 
 
 # Market skills directory (relative to project root)
@@ -33,7 +34,8 @@ class MarketSkill:
         # Add GitHub URL prefix if not a full URL
         repo = self.repo
         if not repo.startswith('http://') and not repo.startswith('https://') and not repo.startswith('git@'):
-            repo = f"https://github.com/{repo}"
+            github_base = get_github_base_url()
+            repo = f"{github_base}/{repo}"
         
         if self.subpath:
             return f"{repo}/{self.subpath}"

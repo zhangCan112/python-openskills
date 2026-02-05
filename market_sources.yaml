@@ -1,6 +1,10 @@
 # Market Sources Configuration
 # Add repositories here to collect skills from the marketplace
 
+# GitHub host configuration
+# Change this if you're using a GitHub Enterprise instance or other GitHub-compatible host
+github_host: "github.com"
+
 sources:
   # Test source (using local skill-creator for testing)
   - repo: "zhangCan112/python-openskills"

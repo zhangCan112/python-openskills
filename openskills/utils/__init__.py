@@ -12,6 +12,12 @@ from openskills.utils.agents_md import (
     replace_skills_section,
     remove_skills_section
 )
+from openskills.utils.config import (
+    get_config_file_path,
+    load_config,
+    get_github_host,
+    get_github_base_url
+)
 
 __all__ = [
     'get_skills_dir',
@@ -26,4 +32,8 @@ __all__ = [
     'generate_skills_xml',
     'replace_skills_section',
     'remove_skills_section',
+    'get_config_file_path',
+    'load_config',
+    'get_github_host',
+    'get_github_base_url',
 ]
