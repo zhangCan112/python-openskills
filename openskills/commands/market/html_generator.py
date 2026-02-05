@@ -228,6 +228,14 @@ def generate_market_html(skills):
             border-radius: 12px;
         }
         
+        .highlight {
+            background: linear-gradient(120deg, #ffd54f 0%, #ffca28 100%);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #333;
+        }
+        
         @media (max-width: 768px) {
             .skills-grid {
                 grid-template-columns: 1fr;
@@ -288,20 +296,34 @@ def generate_market_html(skills):
             console.log('Page initialized successfully!');
         }}
         
+        // Highlight search terms in text
+        function highlightText(text, searchTerm) {{
+            if (!searchTerm) return escapeHtml(text || '');
+            const escapedText = escapeHtml(text || '');
+            const escapedSearchTerm = escapeHtml(searchTerm);
+            const regex = new RegExp('(' + escapeRegex(escapedSearchTerm) + ')', 'gi');
+            return escapedText.replace(regex, '<span class="highlight">$1</span>');
+        }}
+        
+        // Escape special regex characters
+        function escapeRegex(string) {{
+            return string.replace(/[.*+?^${{}}()|[\\]\\\\]/g, '\\\\$&');
+        }}
+        
         // Render skills cards
-        function renderSkills(skillsToRender) {{
+        function renderSkills(skillsToRender, searchTerm) {{
             console.log('Rendering skills:', skillsToRender.length);
             skillsGrid.innerHTML = skillsToRender.map(skill => `
                 <div class="skill-card">
-                    <div class="skill-name">${{escapeHtml(skill.name)}}</div>
-                    <div class="skill-description">${{escapeHtml(skill.description || 'No description available')}}</div>
+                    <div class="skill-name">${{highlightText(skill.name, searchTerm)}}</div>
+                    <div class="skill-description">${{highlightText(skill.description || 'No description available', searchTerm)}}</div>
                     <div class="skill-meta">
-                        ${{skill.author ? `<div>👤 Author: ${{escapeHtml(skill.author)}}</div>` : ''}}
-                        ${{skill.version ? `<div>📦 Version: ${{escapeHtml(skill.version)}}</div>` : ''}}
-                        <div>🔗 Source: ${{escapeHtml(skill.source)}}</div>
+                        ${{skill.author ? `<div>👤 Author: ${{highlightText(skill.author, searchTerm)}}</div>` : ''}}
+                        ${{skill.version ? `<div>📦 Version: ${{highlightText(skill.version, searchTerm)}}</div>` : ''}}
+                        <div>🔗 Source: ${{highlightText(skill.source, searchTerm)}}</div>
                     </div>
                     <div class="skill-tags">
-                        ${{skill.tags.map(tag => `<span class="tag" data-tag="${{escapeHtml(tag)}}">${{escapeHtml(tag)}}</span>`).join('')}}
+                        ${{skill.tags.map(tag => `<span class="tag" data-tag="${{escapeHtml(tag)}}">${{highlightText(tag, searchTerm)}}</span>`).join('')}}
                     </div>
                     <button class="copy-button" data-command="${{escapeHtml(skill.install_command)}}">
                         📋 Copy Install Command
@@ -316,14 +338,16 @@ def generate_market_html(skills):
         
         // Filter skills based on search and tags
         function filterSkills() {{
-            const searchTerm = searchInput.value.toLowerCase();
+            const searchTerm = searchInput.value;
+            const searchTermLower = searchTerm.toLowerCase();
             
             const filtered = skills.filter(skill => {{
                 // Check search term
-                const matchesSearch = !searchTerm ||
-                    skill.name.toLowerCase().includes(searchTerm) ||
-                    (skill.description && skill.description.toLowerCase().includes(searchTerm)) ||
-                    skill.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+                const matchesSearch = !searchTermLower ||
+                    skill.name.toLowerCase().includes(searchTermLower) ||
+                    (skill.description && skill.description.toLowerCase().includes(searchTermLower)) ||
+                    skill.tags.some(tag => tag.toLowerCase().includes(searchTermLower)) ||
+                    skill.author.toLowerCase().includes(searchTermLower);
                 
                 // Check tags (AND logic)
                 const matchesTags = selectedTags.length === 0 ||
@@ -332,7 +356,7 @@ def generate_market_html(skills):
                 return matchesSearch && matchesTags;
             }});
             
-            renderSkills(filtered);
+            renderSkills(filtered, searchTerm);
             updateStats(filtered.length, skills.length);
             
             // Update tag visibility based on filtered skills
