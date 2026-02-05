@@ -203,9 +203,46 @@ def generate_market_html(skills):
         .source-section-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             margin-bottom: 25px;
             padding-bottom: 15px;
             border-bottom: 3px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .source-section-header:hover {
+            background: #f8f9fa;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .collapse-button {
+            font-size: 24px;
+            color: #667eea;
+            cursor: pointer;
+            transition: transform 0.3s;
+            user-select: none;
+            padding: 5px 10px;
+            margin-right: 15px;
+        }
+        
+        .collapse-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .source-section.collapsed .collapse-button {
+            transform: rotate(-90deg);
+        }
+        
+        .source-section.collapsed .skills-grid {
+            display: none;
         }
         
         .source-section-title {
@@ -375,8 +412,11 @@ def generate_market_html(skills):
             const sourcesHtml = Object.entries(grouped).map(([repo, repoSkills]) => `
                 <div class="source-section">
                     <div class="source-section-header">
-                        <div class="source-section-title">${{escapeHtml(repo)}}</div>
-                        <div class="source-section-count">${{repoSkills.length}} skills</div>
+                        <div class="header-left">
+                            <span class="collapse-button">▼</span>
+                            <div class="source-section-title">${{escapeHtml(repo)}}</div>
+                            <div class="source-section-count">${{repoSkills.length}} skills</div>
+                        </div>
                     </div>
                     <div class="skills-grid">
                         ${{repoSkills.map(skill => `
@@ -492,6 +532,15 @@ def generate_market_html(skills):
         contentContainer.addEventListener('click', (e) => {{
             if (e.target.classList.contains('copy-button')) {{
                 copyCommand(e.target);
+            }}
+            
+            // Handle collapse button click
+            if (e.target.classList.contains('collapse-button') || 
+                e.target.closest('.source-section-header') && !e.target.closest('.copy-button')) {{
+                const section = e.target.closest('.source-section');
+                if (section) {{
+                    section.classList.toggle('collapsed');
+                }}
             }}
         }});
         
