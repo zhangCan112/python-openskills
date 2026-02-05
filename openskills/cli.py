@@ -116,9 +116,10 @@ def market():
 
 @market.command()
 @click.option('--tag', '-t', multiple=True, help='Filter by tag (can be used multiple times)')
-def list(tag):
+@click.option('--html', is_flag=True, help='Display skills in an interactive HTML page')
+def list(tag, html):
     """List all available skills in market (optional: filter by tags)"""
-    market_list(tags=tag if tag else None)
+    market_list(tags=tag if tag else None, html=html)
 
 
 @market.command()
