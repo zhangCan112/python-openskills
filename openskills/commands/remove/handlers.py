@@ -1,5 +1,5 @@
 """
-Remove installed skill command
+Remove skill command handlers
 """
 
 import os

@@ -1,25 +1,12 @@
 """
-Compatibility export command for AI tools that don't support AGENTS.md
+Compatibility command handlers
 """
 
 import os
 import click
 from typing import Any
-
-
-# Define target configurations
-TARGETS = {
-    'copilot': {
-        'path': '.github/instructions/openskills.instructions.md',
-        'description': 'GitHub Copilot',
-        'format': 'markdown'
-    },
-    'cline': {
-        'path': '.clinerules/openskills.md',
-        'description': 'Cline',
-        'format': 'text'
-    }
-}
+from openskills.commands.compat.config import TARGETS
+from openskills.commands.compat.utils import list_active_targets
 
 
 def compat_export(target: str, source: str | None = None) -> None:
@@ -52,16 +39,7 @@ def compat_export(target: str, source: str | None = None) -> None:
     
     # Add YAML frontmatter for Copilot compatibility
     if target == 'copilot':
-        # Check if content already has YAML frontmatter
-        if not content.startswith('---'):
-            header = f"""---
-description: OpenSkills compatibility instructions for GitHub Copilot
-name: openskills
-applyTo: "**"
----
-
-"""
-            content = header + content
+        content = _add_copilot_frontmatter(content)
     
     # Create target directory if needed
     target_dir = os.path.dirname(target_path)
@@ -92,20 +70,6 @@ applyTo: "**"
     click.echo(f"\n{target_config['description']} will now use the skills defined in AGENTS.md")
 
 
-def list_active_targets() -> list[str]:
-    """
-    List targets that have been previously configured
-    
-    Returns:
-        List of target names that have configuration files
-    """
-    active_targets = []
-    for target_name, config in TARGETS.items():
-        if os.path.exists(config['path']):
-            active_targets.append(target_name)
-    return active_targets
-
-
 def sync_to_targets(skills: list[Any], source_content: str) -> None:
     """
     Sync skills to all active target configurations
@@ -133,19 +97,33 @@ def sync_to_targets(skills: list[Any], source_content: str) -> None:
         # Add YAML frontmatter for Copilot compatibility
         content_to_write = source_content
         if target == 'copilot':
-            # Check if content already has YAML frontmatter
-            if not source_content.startswith('---'):
-                header = f"""---
-description: OpenSkills compatibility instructions for GitHub Copilot
-name: openskills
-applyTo: "**"
----
-
-"""
-                content_to_write = header + source_content
+            content_to_write = _add_copilot_frontmatter(source_content)
         
         # Write updated content
         with open(target_path, 'w', encoding='utf-8') as f:
             f.write(content_to_write)
         
         click.echo(click.style(f"  [OK] Updated {target_config['description']}: {target_path}", fg='green'))
+
+
+def _add_copilot_frontmatter(content: str) -> str:
+    """
+    Add YAML frontmatter for Copilot compatibility
+    
+    Args:
+        content: The content to add frontmatter to
+        
+    Returns:
+        Content with frontmatter added (if not already present)
+    """
+    # Check if content already has YAML frontmatter
+    if not content.startswith('---'):
+        header = f"""---
+description: OpenSkills compatibility instructions for GitHub Copilot
+name: openskills
+applyTo: "**"
+---
+
+"""
+        content = header + content
+    return content

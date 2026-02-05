@@ -1,9 +1,8 @@
 """
-List all installed skills command
+List skills command handlers
 """
 
 import click
-
 from openskills.utils import find_all_skills
 
 
@@ -16,10 +15,7 @@ def list_skills() -> None:
     skills = find_all_skills()
     
     if not skills:
-        click.echo('No skills installed.\n')
-        click.echo('Install skills:')
-        click.echo(f"  {click.style('openskills install anthropics/skills', fg='cyan')}         {click.style('# Project (default)', dim=True)}")
-        click.echo(f"  {click.style('openskills install owner/skill --global', fg='cyan')}     {click.style('# Global (advanced)', dim=True)}")
+        _display_empty_state()
         return
     
     # Sort: project skills first, then global, alphabetically within each
@@ -36,6 +32,19 @@ def list_skills() -> None:
         click.echo(f"    {click.style(skill.description, dim=True)}\n")
     
     # Summary
+    _display_summary(skills)
+
+
+def _display_empty_state() -> None:
+    """Display message when no skills are installed"""
+    click.echo('No skills installed.\n')
+    click.echo('Install skills:')
+    click.echo(f"  {click.style('openskills install anthropics/skills', fg='cyan')}         {click.style('# Project (default)', dim=True)}")
+    click.echo(f"  {click.style('openskills install owner/skill --global', fg='cyan')}     {click.style('# Global (advanced)', dim=True)}")
+
+
+def _display_summary(skills: list) -> None:
+    """Display summary statistics of installed skills"""
     project_count = len([s for s in skills if s.location == 'project'])
     global_count = len([s for s in skills if s.location == 'global'])
     
