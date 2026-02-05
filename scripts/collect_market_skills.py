@@ -198,16 +198,18 @@ def get_repo_branch(repo_dir: str) -> str:
 def save_market_skills(repo: str, branch: str, skills: List[Dict[str, Any]], output_dir: str) -> None:
     """Save market skills to a JSON file"""
     # Sanitize repo name for filename
-    # Remove URL protocol (http:// or https://) if present
-    if repo.startswith('http://'):
-        repo = repo[7:]
-    elif repo.startswith('https://'):
-        repo = repo[8:]
+    # Remove URL protocol (http:// or https://) if present for filename only
+    filename_repo = repo
+    if filename_repo.startswith('http://'):
+        filename_repo = filename_repo[7:]
+    elif filename_repo.startswith('https://'):
+        filename_repo = filename_repo[8:]
     
     # Replace slashes and colons with underscores to create safe filename
-    filename = repo.replace('/', '_').replace(':', '_') + '.json'
+    filename = filename_repo.replace('/', '_').replace(':', '_') + '.json'
     filepath = os.path.join(output_dir, filename)
     
+    # Keep the original repo URL (with protocol) in the JSON data
     data = {
         'repo': repo,
         'branch': branch,
