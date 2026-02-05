@@ -103,9 +103,9 @@ def _interactive_selection(skills: list[Skill], output_path: str, output_name: s
     
     choices = [
         {
-            'name': f"{click.style(skill.name.ljust(25), bold=True)} {click.style('(project)' if skill.location == 'project' else '(global)', fg='blue' if skill.location == 'project' else 'dim')}",
+            'name': f"{skill.name.ljust(25)} {'(project)' if skill.location == 'project' else '(global)'}",
             'value': skill.name,
-            'checked': skill.name in current_skills or (len(current_skills) == 0 and skill.location == 'project')
+            'checked': skill.name in current_skills
         }
         for skill in sorted_skills
     ]
@@ -113,16 +113,22 @@ def _interactive_selection(skills: list[Skill], output_path: str, output_name: s
     selected = prompt_for_selection(f"Select skills to sync to {output_name}", choices)
     
     if not selected:
-        # User unchecked everything - remove skills section
-        with open(output_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        updated = remove_skills_section(content)
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(updated)
-        
-        click.echo(click.style(f"[OK] Removed all skills from {output_name}", fg='green'))
-        return []
+        # User unchecked everything - ask for confirmation
+        click.echo(click.style("\nNo skills selected. This will remove all skills from the file.", fg='yellow'))
+        if click.confirm(click.style("Do you want to continue?", fg='yellow'), default=False):
+            with open(output_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            updated = remove_skills_section(content)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(updated)
+            
+            click.echo(click.style(f"[OK] Removed all skills from {output_name}", fg='green'))
+            return []
+        else:
+            # User cancelled - keep current skills
+            click.echo(click.style("Cancelled. No changes made.", fg='yellow'))
+            sys.exit(0)
     
     # Filter skills to selected ones
     return [s for s in skills if s.name in selected]

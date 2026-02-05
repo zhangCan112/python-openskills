@@ -9,9 +9,17 @@ import click
 def prompt_for_selection(message: str, choices: list[dict[str, Any]]) -> list[str]:
     """Prompt user to select from choices"""
     try:
-        from questionary import checkbox as q_checkbox
-        result = q_checkbox(message, choices=choices).ask()
-        return result if result else []
+        from questionary import checkbox as q_checkbox, Separator
+        
+        # Add instruction at the top
+        instruction = [
+            {"name": "Use ↑↓ to move, Space to select/deselect, Enter to confirm", "value": "__instruction__", "disabled": True},
+            Separator()
+        ]
+        
+        result = q_checkbox(message, choices=instruction + choices).ask()
+        # Filter out the instruction value if somehow returned
+        return [r for r in (result or []) if r != "__instruction__"]
     except ImportError:
         # Fallback to simple input if questionary not available
         click.echo(message)
