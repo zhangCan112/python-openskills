@@ -18,6 +18,7 @@ from typing import Any, Dict, List
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from openskills.utils.yaml import has_valid_frontmatter, extract_yaml_field
+from openskills.utils.config import get_github_base_url
 
 
 def load_sources_config(config_path: str = "market_sources.yaml") -> Dict[str, Any]:
@@ -45,7 +46,8 @@ def clone_repo(repo: str, branch: str = None, target_dir: str = None) -> str:
     try:
         # Add GitHub URL prefix if not a full URL
         if not repo.startswith('http://') and not repo.startswith('https://') and not repo.startswith('git@'):
-            repo = f"https://github.com/{repo}"
+            github_base = get_github_base_url()
+            repo = f"{github_base}/{repo}"
         
         cmd = ['git', 'clone', '--depth', '1', '--quiet']
         if branch:
