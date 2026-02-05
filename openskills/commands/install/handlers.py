@@ -119,16 +119,31 @@ def _install_from_git(source: str, target_dir: str, is_project: bool, options: I
             repo_url = source
     else:
         # GitHub shorthand: owner/repo or owner/repo/skill-path
+        # Or market format: github.com/owner/repo or github.com/owner/repo/skill-path
         github_base = get_github_base_url()
         parts = source.split('/')
-        if len(parts) == 2:
+        
+        # Check if it's market format (starts with github.com/)
+        if parts[0] == 'github.com' and len(parts) >= 2:
+            # Market format: github.com/owner/repo or github.com/owner/repo/skill-path
+            if len(parts) >= 3:
+                repo_url = f"{github_base}/{parts[1]}/{parts[2]}"
+                if len(parts) > 3:
+                    skill_subpath = '/'.join(parts[3:])
+            else:
+                click.echo(click.style("Error: Invalid market source format", fg='red'))
+                click.echo("Expected: github.com/owner/repo or github.com/owner/repo/skill-path")
+                sys.exit(1)
+        elif len(parts) == 2:
+            # Standard shorthand: owner/repo
             repo_url = f"{github_base}/{source}"
         elif len(parts) > 2:
+            # Standard shorthand with subpath: owner/repo/skill-path
             repo_url = f"{github_base}/{parts[0]}/{parts[1]}"
             skill_subpath = '/'.join(parts[2:])
         else:
             click.echo(click.style("Error: Invalid source format", fg='red'))
-            click.echo("Expected: owner/repo, owner/repo/skill-name, git URL, or local path")
+            click.echo("Expected: owner/repo, owner/repo/skill-name, github.com/owner/repo, git URL, or local path")
             sys.exit(1)
     
     # Get or clone repository from cache
