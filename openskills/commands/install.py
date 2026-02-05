@@ -463,8 +463,28 @@ def install_skill(source: str, options: InstallOptions) -> None:
     skill_subpath = ''
     
     if is_git_url(source):
-        # Full git URL (SSH, HTTPS, git://)
-        repo_url = source
+        # Check if it's a GitHub HTTPS URL with subpath
+        # Format: https://github.com/owner/repo[/skill-path]
+        if source.startswith('https://github.com/'):
+            # Remove 'https://github.com/' prefix
+            path_part = source[len('https://github.com/'):]
+            parts = path_part.split('/')
+            
+            if len(parts) >= 2:
+                # First two parts are owner/repo
+                repo_url = f"https://github.com/{parts[0]}/{parts[1]}"
+                
+                # Remaining parts (if any) are the subpath
+                if len(parts) > 2:
+                    skill_subpath = '/'.join(parts[2:])
+            else:
+                click.echo(click.style("Error: Invalid GitHub URL format", fg='red'))
+                click.echo("Expected: https://github.com/owner/repo[/skill-path]")
+                sys.exit(1)
+        else:
+            # Full git URL (SSH, other HTTPS, git://)
+            # For non-GitHub URLs, we assume the URL points to the repo root
+            repo_url = source
     else:
         # GitHub shorthand: owner/repo or owner/repo/skill-path
         parts = source.split('/')

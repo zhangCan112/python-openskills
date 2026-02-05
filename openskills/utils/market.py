@@ -30,9 +30,14 @@ class MarketSkill:
     @property
     def source(self) -> str:
         """Get source string for installation"""
+        # Add GitHub URL prefix if not a full URL
+        repo = self.repo
+        if not repo.startswith('http://') and not repo.startswith('https://') and not repo.startswith('git@'):
+            repo = f"https://github.com/{repo}"
+        
         if self.subpath:
-            return f"{self.repo}/{self.subpath}"
-        return self.repo
+            return f"{repo}/{self.subpath}"
+        return repo
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
