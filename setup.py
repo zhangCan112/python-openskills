@@ -11,6 +11,7 @@ setup(
     install_requires=[
         'click>=8.1.0',
         'questionary>=2.0.0',
+        'PyYAML>=6.0',
     ],
     entry_points={
         'console_scripts': [
