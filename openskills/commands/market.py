@@ -243,7 +243,7 @@ def generate_market_html(skills):
     
     # Build HTML content
     html_content = f"""<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -255,11 +255,11 @@ def generate_market_html(skills):
         <h1>🛠️ OpenSkills Market</h1>
         
         <div class="search-box">
-            <input type="text" class="search-input" id="searchInput" placeholder="🔍 搜索技能名称、描述或标签...">
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search skill name, description, or tags...">
         </div>
         
         <div class="tags-section">
-            <h3>📌 按标签筛选</h3>
+            <h3>📌 Filter by Tags</h3>
             <div id="tagsContainer">{tags_html}</div>
             <div class="stats">
                 <span id="stats"></span>
@@ -267,7 +267,7 @@ def generate_market_html(skills):
         </div>
         
         <div class="skills-grid" id="skillsGrid"></div>
-        <div id="noResults" class="no-results" style="display: none;">没有找到匹配的技能</div>
+        <div id="noResults" class="no-results" style="display: none;">No matching skills found</div>
     </div>
     
     <script>
@@ -296,17 +296,17 @@ def generate_market_html(skills):
             skillsGrid.innerHTML = skillsToRender.map(skill => `
                 <div class="skill-card">
                     <div class="skill-name">${{escapeHtml(skill.name)}}</div>
-                    <div class="skill-description">${{escapeHtml(skill.description || '暂无描述')}}</div>
+                    <div class="skill-description">${{escapeHtml(skill.description || 'No description available')}}</div>
                     <div class="skill-meta">
-                        ${{skill.author ? `<div>👤 作者: ${{escapeHtml(skill.author)}}</div>` : ''}}
-                        ${{skill.version ? `<div>📦 版本: ${{escapeHtml(skill.version)}}</div>` : ''}}
-                        <div>🔗 源: ${{escapeHtml(skill.source)}}</div>
+                        ${{skill.author ? `<div>👤 Author: ${{escapeHtml(skill.author)}}</div>` : ''}}
+                        ${{skill.version ? `<div>📦 Version: ${{escapeHtml(skill.version)}}</div>` : ''}}
+                        <div>🔗 Source: ${{escapeHtml(skill.source)}}</div>
                     </div>
                     <div class="skill-tags">
                         ${{skill.tags.map(tag => `<span class="tag" data-tag="${{escapeHtml(tag)}}">${{escapeHtml(tag)}}</span>`).join('')}}
                     </div>
                     <button class="copy-button" data-command="${{escapeHtml(skill.install_command)}}">
-                        📋 复制安装命令
+                        📋 Copy Install Command
                     </button>
                     <div class="install-command">${{escapeHtml(skill.install_command)}}</div>
                 </div>
@@ -362,24 +362,24 @@ def generate_market_html(skills):
         
         // Update stats
         function updateStats(visible, total) {{
-            stats.textContent = `显示 ${{visible}} / 共 ${{total}} 个技能`;
+            stats.textContent = `Showing ${{visible}} / ${{total}} skills`;
         }}
         
         // Copy command to clipboard
         function copyCommand(button) {{
             const command = button.getAttribute('data-command');
             navigator.clipboard.writeText(command).then(() => {{
-                button.textContent = '✅ 已复制!';
+                button.textContent = '✅ Copied!';
                 button.classList.add('copied');
                 setTimeout(() => {{
-                    button.textContent = '📋 复制安装命令';
+                    button.textContent = '📋 Copy Install Command';
                     button.classList.remove('copied');
                 }}, 2000);
             }}).catch(err => {{
-                console.error('复制失败:', err);
-                button.textContent = '❌ 复制失败';
+                console.error('Copy failed:', err);
+                button.textContent = '❌ Copy Failed';
                 setTimeout(() => {{
-                    button.textContent = '📋 复制安装命令';
+                    button.textContent = '📋 Copy Install Command';
                 }}, 2000);
             }});
         }}
