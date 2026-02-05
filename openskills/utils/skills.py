@@ -5,7 +5,7 @@ Skill finding and management utilities
 import os
 from pathlib import Path
 
-from openskills.types import Skill, SkillLocationInfo
+from openskills.skill_types import Skill, SkillLocationInfo
 from openskills.utils.dirs import get_search_dirs
 from openskills.utils.yaml import extract_yaml_field
 

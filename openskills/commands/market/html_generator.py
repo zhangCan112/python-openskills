@@ -23,10 +23,15 @@ def generate_market_html(skills):
     # Prepare skills data for JavaScript
     skills_data = []
     for skill in skills:
+        # Use the repo field directly from MarketSkill for grouping
+        # This is the base repository without subpaths
+        repo = skill.repo
+        
         skills_data.append({
             'name': skill.name,
             'description': skill.description,
             'source': skill.source,
+            'repo': repo,  # Use repo for grouping
             'author': skill.author,
             'version': skill.version,
             'tags': skill.tags,
@@ -187,6 +192,45 @@ def generate_market_html(skills):
             color: white;
         }
         
+        .source-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+        }
+        
+        .source-section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+        
+        .source-section-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .source-section-count {
+            margin-left: 15px;
+            padding: 5px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            color: #666;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .source-section .skills-grid {
+            gap: 20px;
+        }
+        
         .copy-button {
             background: #667eea;
             color: white;
@@ -244,6 +288,10 @@ def generate_market_html(skills):
             h1 {
                 font-size: 2em;
             }
+            
+            .source-section-title {
+                font-size: 1.4em;
+            }
         }
 """
     
@@ -272,7 +320,7 @@ def generate_market_html(skills):
             </div>
         </div>
         
-        <div class="skills-grid" id="skillsGrid"></div>
+        <div id="contentContainer"></div>
         <div id="noResults" class="no-results" style="display: none;">No matching skills found</div>
     </div>
     
@@ -282,8 +330,8 @@ def generate_market_html(skills):
         let selectedTags = [];
         
         const searchInput = document.getElementById('searchInput');
-        const skillsGrid = document.getElementById('skillsGrid');
         const tagsContainer = document.getElementById('tagsContainer');
+        const contentContainer = document.getElementById('contentContainer');
         const noResults = document.getElementById('noResults');
         const stats = document.getElementById('stats');
         
@@ -291,7 +339,7 @@ def generate_market_html(skills):
         function init() {{
             console.log('Initializing page...');
             console.log('Skills count:', skills.length);
-            renderSkills(skills);
+            renderSkillsGroupedBySource(skills);
             updateStats(skills.length, skills.length);
             console.log('Page initialized successfully!');
         }}
@@ -310,30 +358,55 @@ def generate_market_html(skills):
             return string.replace(/[.*+?^${{}}()|[\\]\\\\]/g, '\\\\$&');
         }}
         
-        // Render skills cards
-        function renderSkills(skillsToRender, searchTerm) {{
-            console.log('Rendering skills:', skillsToRender.length);
-            skillsGrid.innerHTML = skillsToRender.map(skill => `
-                <div class="skill-card">
-                    <div class="skill-name">${{highlightText(skill.name, searchTerm)}}</div>
-                    <div class="skill-description">${{highlightText(skill.description || 'No description available', searchTerm)}}</div>
-                    <div class="skill-meta">
-                        ${{skill.author ? `<div>👤 Author: ${{highlightText(skill.author, searchTerm)}}</div>` : ''}}
-                        ${{skill.version ? `<div>📦 Version: ${{highlightText(skill.version, searchTerm)}}</div>` : ''}}
-                        <div>🔗 Source: ${{highlightText(skill.source, searchTerm)}}</div>
+        // Render skills grouped by repo
+        function renderSkillsGroupedBySource(skillsToRender, searchTerm) {{
+            console.log('Rendering skills grouped by repo:', skillsToRender.length);
+            
+            // Group skills by repo
+            const grouped = {{}};
+            skillsToRender.forEach(skill => {{
+                if (!grouped[skill.repo]) {{
+                    grouped[skill.repo] = [];
+                }}
+                grouped[skill.repo].push(skill);
+            }});
+            
+            // Generate HTML for each repo section
+            const sourcesHtml = Object.entries(grouped).map(([repo, repoSkills]) => `
+                <div class="source-section">
+                    <div class="source-section-header">
+                        <div class="source-section-title">${{escapeHtml(repo)}}</div>
+                        <div class="source-section-count">${{repoSkills.length}} skills</div>
                     </div>
-                    <div class="skill-tags">
-                        ${{skill.tags.map(tag => `<span class="tag" data-tag="${{escapeHtml(tag)}}">${{highlightText(tag, searchTerm)}}</span>`).join('')}}
+                    <div class="skills-grid">
+                        ${{repoSkills.map(skill => `
+                            <div class="skill-card">
+                                <div class="skill-name">${{highlightText(skill.name, searchTerm)}}</div>
+                                <div class="skill-description">${{highlightText(skill.description || 'No description available', searchTerm)}}</div>
+                                <div class="skill-meta">
+                                    ${{skill.author ? `<div>👤 Author: ${{highlightText(skill.author, searchTerm)}}</div>` : ''}}
+                                    ${{skill.version ? `<div>📦 Version: ${{highlightText(skill.version, searchTerm)}}</div>` : ''}}
+                                </div>
+                                <div class="skill-tags">
+                                    ${{skill.tags.map(tag => `<span class="tag" data-tag="${{escapeHtml(tag)}}">${{highlightText(tag, searchTerm)}}</span>`).join('')}}
+                                </div>
+                                <button class="copy-button" data-command="${{escapeHtml(skill.install_command)}}">
+                                    📋 Copy Install Command
+                                </button>
+                                <div class="install-command">${{escapeHtml(skill.install_command)}}</div>
+                            </div>
+                        `).join('')}}
                     </div>
-                    <button class="copy-button" data-command="${{escapeHtml(skill.install_command)}}">
-                        📋 Copy Install Command
-                    </button>
-                    <div class="install-command">${{escapeHtml(skill.install_command)}}</div>
                 </div>
             `).join('');
             
+            contentContainer.innerHTML = sourcesHtml;
+            
             // Show/hide no results message
             noResults.style.display = skillsToRender.length === 0 ? 'block' : 'none';
+            if (skillsToRender.length === 0) {{
+                contentContainer.innerHTML = noResults.outerHTML;
+            }}
         }}
         
         // Filter skills based on search and tags
@@ -356,7 +429,7 @@ def generate_market_html(skills):
                 return matchesSearch && matchesTags;
             }});
             
-            renderSkills(filtered, searchTerm);
+            renderSkillsGroupedBySource(filtered, searchTerm);
             updateStats(filtered.length, skills.length);
             
             // Update tag visibility based on filtered skills
@@ -416,7 +489,7 @@ def generate_market_html(skills):
         // Event listeners
         searchInput.addEventListener('input', filterSkills);
         
-        skillsGrid.addEventListener('click', (e) => {{
+        contentContainer.addEventListener('click', (e) => {{
             if (e.target.classList.contains('copy-button')) {{
                 copyCommand(e.target);
             }}

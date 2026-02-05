@@ -31,11 +31,13 @@ class MarketSkill:
     @property
     def source(self) -> str:
         """Get source string for installation"""
-        # Add GitHub URL prefix if not a full URL
+        # Add GitHub URL prefix if not a full URL and not already containing github.com
         repo = self.repo
         if not repo.startswith('http://') and not repo.startswith('https://') and not repo.startswith('git@'):
             github_base = get_github_base_url()
-            repo = f"{github_base}/{repo}"
+            # Check if repo already contains the domain (e.g., "github.com/owner/repo")
+            if not repo.startswith('github.com/'):
+                repo = f"{github_base}/{repo}"
         
         if self.subpath:
             return f"{repo}/{self.subpath}"

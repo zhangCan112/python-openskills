@@ -5,7 +5,7 @@ Sync command handlers
 import os
 import sys
 import click
-from openskills.types import Skill
+from openskills.skill_types import Skill
 from openskills.utils import (
     find_all_skills,
     parse_current_skills,

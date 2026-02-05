@@ -7,7 +7,7 @@ import sys
 import shutil
 import click
 from openskills.utils import has_valid_frontmatter, write_skill_metadata
-from openskills.types import SkillSourceType, SkillSourceMetadata
+from openskills.skill_types import SkillSourceType, SkillSourceMetadata
 from openskills.commands.install.validators import warn_if_conflict, is_path_inside
 from openskills.commands.install.utils import format_size
 

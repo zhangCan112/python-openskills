@@ -7,7 +7,7 @@ import shutil
 import sys
 import click
 from openskills.utils import has_valid_frontmatter, extract_yaml_field, write_skill_metadata
-from openskills.types import SkillSourceType, SkillSourceMetadata
+from openskills.skill_types import SkillSourceType, SkillSourceMetadata
 from openskills.commands.install.validators import warn_if_conflict, is_path_inside
 from openskills.commands.install.utils import get_repo_name, get_directory_size, format_size
 from openskills.commands.install.prompts import prompt_for_selection

@@ -8,7 +8,7 @@ import re
 import shutil
 from typing import Any
 
-from openskills.types import Skill
+from openskills.skill_types import Skill
 
 
 def parse_current_skills(content: str) -> list[str]:

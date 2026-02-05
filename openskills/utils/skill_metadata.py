@@ -6,7 +6,7 @@ import json
 import os
 from typing import Any
 
-from openskills.types import SkillSourceMetadata
+from openskills.skill_types import SkillSourceMetadata
 
 SKILL_METADATA_FILE = '.openskills.json'
 

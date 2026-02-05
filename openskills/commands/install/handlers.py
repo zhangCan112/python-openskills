@@ -7,7 +7,7 @@ import sys
 import shutil
 from pathlib import Path
 import click
-from openskills.types import InstallOptions, SkillSourceType, SkillSourceMetadata
+from openskills.skill_types import InstallOptions, SkillSourceType, SkillSourceMetadata
 from openskills.utils import has_valid_frontmatter, write_skill_metadata, get_skills_dir
 from openskills.utils.config import get_github_base_url
 from openskills.commands.install.validators import is_local_path, is_git_url, expand_path

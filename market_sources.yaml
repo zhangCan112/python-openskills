@@ -7,7 +7,12 @@ github_host: "github.com"
 
 sources:
   # Test source (using local skill-creator for testing)
-  - repo: "zhangCan112/python-openskills"
+
+  - repo: "https://github.com/zhangCan112/python-openskills"
+    branch: "main"
+    skillspath: "skills"
+
+  - repo: "https://github.com/anthropics/skills"
     branch: "main"
     skillspath: "skills"
   

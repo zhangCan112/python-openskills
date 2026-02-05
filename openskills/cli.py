@@ -15,7 +15,7 @@ from openskills.commands import (
     market_list,
     market_search
 )
-from openskills.types import InstallOptions
+from openskills.skill_types import InstallOptions
 
 
 @click.group(invoke_without_command=True)
