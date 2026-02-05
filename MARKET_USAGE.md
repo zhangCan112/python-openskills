@@ -8,15 +8,17 @@ The Skill Market feature allows maintainers to collect skill information from re
 
 ### 1. Configure Source Repositories
 
-Edit the `market_sources.yaml` file to add repositories to collect from:
+Edit `market_sources.yaml` file to add repositories to collect from:
 
 ```yaml
 sources:
-  - repo: "owner/repo1"
+  - repo: "https://github.com/owner/repo1"
     branch: "main"
-  - repo: "owner/repo2"
+  - repo: "https://github.com/owner/repo2"
     branch: "master"
 ```
+
+**Important**: Repository URLs must be complete URLs. Short formats like `owner/repo` are not supported.
 
 ### 2. Collect Skills
 
@@ -93,10 +95,12 @@ The system will:
 The original installation methods are still supported:
 
 ```bash
-openskills install owner/repo
-openskills install owner/repo/skill-path
-openskills install https://github.com/owner/repo.git
+openskills install https://github.com/owner/repo
+openskills install https://github.com/owner/repo/skill-path
+openskills install git@github.com:owner/repo.git
 ```
+
+**Important**: Git repository URLs must be complete. Short formats like `owner/repo` or `github.com/owner/repo` are not supported.
 
 ## File Structure
 

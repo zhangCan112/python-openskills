@@ -90,23 +90,23 @@ python -m openskills.cli list
 
 ### 安装技能
 
-从GitHub仓库安装：
+从Git仓库安装（需要完整URL）：
 
 ```bash
 # 安装到项目目录（默认）
-openskills install anthropics/skills
+openskills install https://github.com/anthropics/skills
 
 # 安装到全局目录
-openskills install owner/skill --global
+openskills install https://github.com/owner/repo --global
 
 # 安装到.agent/skills（用于通用AGENTS.md）
-openskills install owner/skill --universal
+openskills install https://github.com/owner/repo --universal
 
 # 跳过交互式选择，安装所有找到的技能
-openskills install owner/skill --yes
+openskills install https://github.com/owner/repo --yes
 
 # 如果使用方式2，请在命令前加上 python -m openskills.cli
-# 例如：python -m openskills.cli install anthropics/skills
+# 例如：python -m openskills.cli install https://github.com/anthropics/skills
 ```
 
 从本地路径安装：
@@ -116,12 +116,13 @@ openskills install ./local-skill
 openskills install ~/my-skills/skill-name
 ```
 
-从完整Git URL安装：
+使用SSH格式的Git URL安装：
 
 ```bash
-openskills install https://github.com/owner/repo.git
 openskills install git@github.com:owner/repo.git
 ```
+
+**重要提示**: Git仓库源必须是完整的URL。不支持简写格式如 `owner/repo` 或 `github.com/owner/repo`。
 
 ### 读取技能内容
 

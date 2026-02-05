@@ -14,9 +14,7 @@ from openskills.utils.agents_md import (
 )
 from openskills.utils.config import (
     get_config_file_path,
-    load_config,
-    get_github_host,
-    get_github_base_url
+    load_config
 )
 
 __all__ = [
@@ -34,6 +32,4 @@ __all__ = [
     'remove_skills_section',
     'get_config_file_path',
     'load_config',
-    'get_github_host',
-    'get_github_base_url',
 ]

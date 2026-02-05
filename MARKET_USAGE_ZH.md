@@ -12,11 +12,13 @@ Skill Market 功能允许维护者从远端仓库收集 skills 信息，并让�
 
 ```yaml
 sources:
-  - repo: "owner/repo1"
+  - repo: "https://github.com/owner/repo1"
     branch: "main"
-  - repo: "owner/repo2"
+  - repo: "https://github.com/owner/repo2"
     branch: "master"
 ```
+
+**重要提示**: 仓库URL必须是完整的URL。不支持 `owner/repo` 这样的简写格式。
 
 ### 2. 收集 Skills
 
@@ -93,10 +95,12 @@ openskills install <skill-name>
 仍然支持原有的安装方式：
 
 ```bash
-openskills install owner/repo
-openskills install owner/repo/skill-path
-openskills install https://github.com/owner/repo.git
+openskills install https://github.com/owner/repo
+openskills install https://github.com/owner/repo/skill-path
+openskills install git@github.com:owner/repo.git
 ```
+
+**重要提示**: Git仓库URL必须是完整的。不支持 `owner/repo` 或 `github.com/owner/repo` 这样的简写格式。
 
 ## 文件结构
 

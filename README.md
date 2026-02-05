@@ -90,23 +90,23 @@ python -m openskills.cli list
 
 ### Install Skills
 
-Install from GitHub repository:
+Install from Git repository (complete URL required):
 
 ```bash
 # Install to project directory (default)
-openskills install anthropics/skills
+openskills install https://github.com/anthropics/skills
 
 # Install to global directory
-openskills install owner/skill --global
+openskills install https://github.com/owner/repo --global
 
 # Install to .agent/skills (for universal AGENTS.md)
-openskills install owner/skill --universal
+openskills install https://github.com/owner/repo --universal
 
 # Skip interactive selection, install all found skills
-openskills install owner/skill --yes
+openskills install https://github.com/owner/repo --yes
 
 # If using Method 2, add python -m openskills.cli before command
-# Example: python -m openskills.cli install anthropics/skills
+# Example: python -m openskills.cli install https://github.com/anthropics/skills
 ```
 
 Install from local path:
@@ -116,12 +116,13 @@ openskills install ./local-skill
 openskills install ~/my-skills/skill-name
 ```
 
-Install from full Git URL:
+Install from Git URL with SSH:
 
 ```bash
-openskills install https://github.com/owner/repo.git
 openskills install git@github.com:owner/repo.git
 ```
+
+**Important**: Git repository sources must be complete URLs. Short formats like `owner/repo` or `github.com/owner/repo` are not supported.
 
 ### Read Skill Content
 

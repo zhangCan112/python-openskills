@@ -6,7 +6,6 @@ import os
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from openskills.utils.config import get_github_base_url
 
 
 # Market skills directory (relative to project root)
@@ -31,17 +30,10 @@ class MarketSkill:
     @property
     def source(self) -> str:
         """Get source string for installation"""
-        # Add GitHub URL prefix if not a full URL and not already containing github.com
-        repo = self.repo
-        if not repo.startswith('http://') and not repo.startswith('https://') and not repo.startswith('git@'):
-            github_base = get_github_base_url()
-            # Check if repo already contains the domain (e.g., "github.com/owner/repo")
-            if not repo.startswith('github.com/'):
-                repo = f"{github_base}/{repo}"
-        
+        # repo is already a complete URL
         if self.subpath:
-            return f"{repo}/{self.subpath}"
-        return repo
+            return f"{self.repo}/{self.subpath}"
+        return self.repo
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""

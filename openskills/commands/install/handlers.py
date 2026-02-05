@@ -9,7 +9,6 @@ from pathlib import Path
 import click
 from openskills.skill_types import InstallOptions, SkillSourceType, SkillSourceMetadata
 from openskills.utils import has_valid_frontmatter, write_skill_metadata, get_skills_dir
-from openskills.utils.config import get_github_base_url
 from openskills.commands.install.validators import is_local_path, is_git_url, expand_path
 from openskills.commands.install.utils import get_repo_name, print_post_install_hints
 from openskills.commands.install.cache import get_cached_repo
@@ -84,7 +83,7 @@ def _install_from_git(source: str, target_dir: str, is_project: bool, options: I
     Handle installation from Git source
     
     Args:
-        source: Source string
+        source: Source string (must be a complete URL)
         target_dir: Target installation directory
         is_project: Whether this is a project install
         options: Installation options
@@ -92,59 +91,39 @@ def _install_from_git(source: str, target_dir: str, is_project: bool, options: I
     repo_url: str
     skill_subpath = ''
     
-    if is_git_url(source):
-        # Check if it's a GitHub HTTPS URL with subpath
-        # Format: https://github.com/owner/repo[/skill-path]
-        github_base = get_github_base_url()
-        
-        if source.startswith(f'{github_base}/'):
-            # Remove 'https://host/' prefix
-            path_part = source[len(f'{github_base}/'):]
-            parts = path_part.split('/')
-            
-            if len(parts) >= 2:
-                # First two parts are owner/repo
-                repo_url = f"{github_base}/{parts[0]}/{parts[1]}"
-                
-                # Remaining parts (if any) are the subpath
-                if len(parts) > 2:
-                    skill_subpath = '/'.join(parts[2:])
-            else:
-                click.echo(click.style("Error: Invalid GitHub URL format", fg='red'))
-                click.echo(f"Expected: {github_base}/owner/repo[/skill-path]")
-                sys.exit(1)
-        else:
-            # Full git URL (SSH, other HTTPS, git://)
-            # For non-GitHub URLs, we assume the URL points to the repo root
-            repo_url = source
-    else:
-        # GitHub shorthand: owner/repo or owner/repo/skill-path
-        # Or market format: github.com/owner/repo or github.com/owner/repo/skill-path
-        github_base = get_github_base_url()
+    if not is_git_url(source):
+        click.echo(click.style("Error: Invalid source format", fg='red'))
+        click.echo("Expected: complete git URL (e.g., https://github.com/owner/repo) or local path")
+        sys.exit(1)
+    
+    # Check if it's a git URL with subpath
+    # Format: https://github.com/owner/repo[/skill-path]
+    # Or: git@github.com:owner/repo.git (SSH format)
+    
+    if source.startswith('http://') or source.startswith('https://'):
+        # HTTPS URL
+        # Remove protocol and domain to get the path
         parts = source.split('/')
         
-        # Check if it's market format (starts with github.com/)
-        if parts[0] == 'github.com' and len(parts) >= 2:
-            # Market format: github.com/owner/repo or github.com/owner/repo/skill-path
-            if len(parts) >= 3:
-                repo_url = f"{github_base}/{parts[1]}/{parts[2]}"
-                if len(parts) > 3:
-                    skill_subpath = '/'.join(parts[3:])
-            else:
-                click.echo(click.style("Error: Invalid market source format", fg='red'))
-                click.echo("Expected: github.com/owner/repo or github.com/owner/repo/skill-path")
-                sys.exit(1)
-        elif len(parts) == 2:
-            # Standard shorthand: owner/repo
-            repo_url = f"{github_base}/{source}"
-        elif len(parts) > 2:
-            # Standard shorthand with subpath: owner/repo/skill-path
-            repo_url = f"{github_base}/{parts[0]}/{parts[1]}"
-            skill_subpath = '/'.join(parts[2:])
-        else:
-            click.echo(click.style("Error: Invalid source format", fg='red'))
-            click.echo("Expected: owner/repo, owner/repo/skill-name, github.com/owner/repo, git URL, or local path")
+        if len(parts) < 5:  # protocol, '', domain, owner, repo
+            click.echo(click.style("Error: Invalid URL format", fg='red'))
+            click.echo("Expected: https://domain.com/owner/repo[/skill-path]")
             sys.exit(1)
+        
+        # Reconstruct repo URL (owner/repo)
+        repo_url = '/'.join(parts[:5])
+        
+        # Remaining parts (if any) are the subpath
+        if len(parts) > 5:
+            skill_subpath = '/'.join(parts[5:])
+    elif source.startswith('git@'):
+        # SSH URL - doesn't support subpath in URL format
+        # For SSH URLs, we assume the URL points to the repo root
+        repo_url = source
+    else:
+        # Other git URLs (git://, etc.)
+        # We assume the URL points to the repo root
+        repo_url = source
     
     # Get or clone repository from cache
     repo_dir = get_cached_repo(repo_url)
