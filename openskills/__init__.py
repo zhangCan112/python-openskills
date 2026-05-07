@@ -1,7 +1,3 @@
-"""
-OpenSkills - Universal skills loader for AI coding agents
-Python implementation
-"""
+"""OpenSkills - Universal skills manager for AI coding agents"""
 
-__version__ = "1.0.0"
-__author__ = "OpenSkills Contributors"
+__version__ = "2.0.0"
