@@ -12,7 +12,7 @@ from openskills.models import SkillSourceType, SkillSourceMetadata, InstallOptio
 from openskills.yaml_utils import has_valid_frontmatter, extract_yaml_field
 from openskills.metadata import write_skill_metadata
 from openskills.dirs import get_skills_dir, get_cache_dir
-from openskills.utils.market import find_skill_by_name
+from openskills.market import find_skill_by_name
 
 ANTHROPIC_MARKETPLACE_SKILLS = [
     'xlsx',
