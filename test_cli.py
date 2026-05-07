@@ -1,18 +1,12 @@
-"""
-Test script to verify OpenSkills Python package functionality
-"""
-
 import sys
 import os
 
-# Add current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Test imports
 print("Testing imports...")
 try:
     import openskills
-    print(f"[OK] openskills imported from: {openskills.__file__ if hasattr(openskills, '__file__') else 'namespace package'}")
+    print(f"[OK] openskills v{openskills.__version__}")
 except ImportError as e:
     print(f"[FAIL] Failed to import openskills: {e}")
     sys.exit(1)
@@ -25,24 +19,45 @@ except ImportError as e:
     sys.exit(1)
 
 try:
-    from openskills import types
-    print("[OK] openskills.types imported")
+    from openskills import models
+    print("[OK] openskills.models imported")
 except ImportError as e:
-    print(f"[FAIL] Failed to import openskills.types: {e}")
+    print(f"[FAIL] Failed to import openskills.models: {e}")
     sys.exit(1)
 
 try:
-    from openskills import commands
-    print(f"[OK] openskills.commands imported")
+    from openskills import finder
+    print("[OK] openskills.finder imported")
 except ImportError as e:
-    print(f"[FAIL] Failed to import openskills.commands: {e}")
+    print(f"[FAIL] Failed to import openskills.finder: {e}")
     sys.exit(1)
 
 try:
-    from openskills import utils
-    print("[OK] openskills.utils imported")
+    from openskills import market
+    print("[OK] openskills.market imported")
 except ImportError as e:
-    print(f"[FAIL] Failed to import openskills.utils: {e}")
+    print(f"[FAIL] Failed to import openskills.market: {e}")
+    sys.exit(1)
+
+try:
+    from openskills import installer
+    print("[OK] openskills.installer imported")
+except ImportError as e:
+    print(f"[FAIL] Failed to import openskills.installer: {e}")
+    sys.exit(1)
+
+try:
+    from openskills import updater
+    print("[OK] openskills.updater imported")
+except ImportError as e:
+    print(f"[FAIL] Failed to import openskills.updater: {e}")
+    sys.exit(1)
+
+try:
+    from openskills import remover
+    print("[OK] openskills.remover imported")
+except ImportError as e:
+    print(f"[FAIL] Failed to import openskills.remover: {e}")
     sys.exit(1)
 
 print("\nTesting CLI help...")
@@ -54,4 +69,4 @@ except Exception as e:
     print(f"[FAIL] CLI test failed: {e}")
     sys.exit(1)
 
-print("\n[SUCCESS] All tests passed! OpenSkills Python package is working correctly.")
+print("\n[SUCCESS] All tests passed!")
