@@ -263,7 +263,7 @@ def main():
     print(f"\nFound {len(sources)} source(s) to process")
     
     # Create output directory
-    output_dir = "marketskills"
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'openskills', 'data', 'marketskills')
     os.makedirs(output_dir, exist_ok=True)
     
     # Collect from each source
