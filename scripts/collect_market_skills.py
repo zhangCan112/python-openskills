@@ -17,7 +17,7 @@ from typing import Any, Dict, List
 # Add parent directory to path to import openskills modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from openskills.utils.yaml import has_valid_frontmatter, extract_yaml_field
+from openskills.yaml_utils import has_valid_frontmatter, extract_yaml_field
 
 
 def load_sources_config(config_path: str = "market_sources.yaml") -> Dict[str, Any]:
@@ -64,58 +64,31 @@ def clone_repo(repo: str, branch: str = None, target_dir: str = None) -> str:
         return None
 
 
-def parse_tags(tags_str: str) -> List[str]:
-    """
-    Parse tags from comma-separated string
-    
-    Args:
-        tags_str: Comma-separated tags string (e.g., "development,tools,workflow")
-        
-    Returns:
-        List of tags (empty list if input is None or empty)
-    """
-    if not tags_str:
-        return []
-    # Split by comma and strip whitespace from each tag
-    tags = [tag.strip() for tag in tags_str.split(',')]
-    # Filter out empty tags
-    return [tag for tag in tags if tag]
-
-
 def extract_skill_info(skill_dir: str, repo: str) -> Dict[str, Any] | None:
     """Extract skill information from SKILL.md file"""
     skill_md_path = os.path.join(skill_dir, 'SKILL.md')
-    
+
     if not os.path.exists(skill_md_path):
         return None
-    
+
     with open(skill_md_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    
+
     if not has_valid_frontmatter(content):
         print(f"Warning: Invalid SKILL.md in {skill_dir} (missing YAML frontmatter)")
         return None
-    
+
     skill_name = extract_yaml_field(content, 'name')
     if not skill_name:
-        # Use directory name as skill name
         skill_name = os.path.basename(skill_dir)
-    
-    # Get subpath relative to repo root
-    # This will be set later by the caller
-    
-    # Extract and parse tags (comma-separated string to list)
-    tags_str = extract_yaml_field(content, 'tags')
-    tags_list = parse_tags(tags_str)
-    
+
     skill_info = {
         'name': skill_name,
         'description': extract_yaml_field(content, 'description') or '',
         'version': extract_yaml_field(content, 'version') or '',
         'author': extract_yaml_field(content, 'author') or '',
-        'tags': tags_list
     }
-    
+
     return skill_info
 
 

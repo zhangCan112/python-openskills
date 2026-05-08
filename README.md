@@ -23,7 +23,7 @@ openskills update [skill1 skill2 ...]    # Update skills (default: all)
 openskills remove <skill>                # Remove a single skill
 openskills rm <skill>                    # Alias for remove
 openskills manage                        # Interactive batch management (remove)
-openskills market list [--tag <tag>]     # List market skills
+openskills market list                       # List market skills
                          [--html]         #   HTML format (open in browser)
 openskills market search <keyword>       # Search market skills
 openskills --version                     # Show version

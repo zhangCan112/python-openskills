@@ -94,7 +94,6 @@ config.py      配置文件加载
 ---
 name: my-skill
 description: A useful skill
-tags: [tools, workflow]
 ---
 
 # My Skill
@@ -347,7 +346,6 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 | `subpath` | 在仓库中的子路径 |
 | `version` | 版本号 |
 | `author` | 作者 |
-| `tags` | 标签列表 |
 
 `source` 属性：自动拼接 `repo/subpath` 作为安装来源字符串。
 
@@ -360,13 +358,12 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 **`find_skill_by_name(name)`** — 按名称精确查找（不区分大小写）
 
 **`search_skills(keyword)`** — 按关键词搜索
-- 搜索范围：名称、描述、标签
+- 搜索范围：名称、描述
 - 不区分大小写
 
 #### 命令处理
 
-**`market_list(tags, html)`** — 列表命令处理
-- 可选按 tag 过滤（AND 逻辑：所有 tag 都必须匹配）
+**`market_list(html)`** — 列表命令处理
 - `--html` 模式：生成 HTML 页面并在浏览器中打开
 - 终端模式：格式化输出到终端
 
@@ -378,7 +375,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 
 **`_display_terminal_output(skills, keyword)`** — 格式化终端输出
 - 按名称分组（同名 skill 可能来自不同仓库）
-- 显示描述、来源、作者、版本、标签
+- 显示描述、来源、作者、版本
 - 如果提供了关键词，在描述中高亮匹配部分
 
 #### HTML 生成
@@ -386,7 +383,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 **`generate_market_html(skills)`** — 生成交互式 HTML 页面
 - 包含搜索框和标签过滤功能
 - skill 按仓库分组展示为卡片
-- 每个卡片显示名称、描述、来源、标签
+- 每个卡片显示名称、描述、来源
 - "Copy Install Command" 按钮（复制 `openskills install <source>`）
 - 仓库分组可折叠/展开
 - 生成到临时文件并在浏览器中打开
@@ -435,7 +432,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 2. 对每个配置的仓库：
    - 克隆到临时目录
    - 扫描指定路径（如 `skills/`）下的所有 SKILL.md 文件
-   - 提取 YAML frontmatter 中的元数据（name、description、tags 等）
+    - 提取 YAML frontmatter 中的元数据（name、description 等）
 3. 将收集到的数据保存到 `openskills/data/marketskills/` 目录下的 JSON 文件
 
 **输出文件格式：**
@@ -447,7 +444,6 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
     {
       "name": "pdf",
       "description": "...",
-      "tags": ["document", "pdf"],
       "subpath": "skills/pdf"
     }
   ]

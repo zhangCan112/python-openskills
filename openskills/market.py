@@ -14,8 +14,7 @@ MARKETSKILLS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dat
 class MarketSkill:
 
     def __init__(self, name: str, description: str, repo: str, branch: str,
-                 subpath: str = '', version: str = '', author: str = '',
-                 tags: List[str] = None):
+                 subpath: str = '', version: str = '', author: str = ''):
         self.name = name
         self.description = description
         self.repo = repo
@@ -23,7 +22,6 @@ class MarketSkill:
         self.subpath = subpath
         self.version = version
         self.author = author
-        self.tags = tags or []
 
     @property
     def source(self) -> str:
@@ -39,8 +37,7 @@ class MarketSkill:
             'branch': self.branch,
             'subpath': self.subpath,
             'version': self.version,
-            'author': self.author,
-            'tags': self.tags
+            'author': self.author
         }
 
     @classmethod
@@ -52,8 +49,7 @@ class MarketSkill:
             branch=branch,
             subpath=data.get('subpath', ''),
             version=data.get('version', ''),
-            author=data.get('author', ''),
-            tags=data.get('tags', [])
+            author=data.get('author', '')
         )
 
 
@@ -93,10 +89,6 @@ def search_skills(keyword: str) -> List[MarketSkill]:
             continue
         if keyword_lower in skill.description.lower():
             matched_skills.append(skill)
-            continue
-        if any(keyword_lower in tag.lower() for tag in skill.tags):
-            matched_skills.append(skill)
-            continue
     return matched_skills
 
 
@@ -110,14 +102,8 @@ def get_unique_skill_names() -> List[str]:
     return sorted(list(unique_names))
 
 
-def market_list(tags=None, html=False):
+def market_list(html=False):
     skills = list_all_skills()
-    if tags:
-        tags_list = list(tags)
-        skills = [
-            skill for skill in skills
-            if all(tag.lower() in (t.lower() for t in skill.tags) for tag in tags_list)
-        ]
     if not skills:
         click.echo(click.style("No skills found in market", fg='yellow'))
         click.echo("Use 'openskills market search <keyword>' to search")
@@ -167,17 +153,10 @@ def _display_terminal_output(skills, keyword: str | None = None):
                 click.echo(f"      Author: {skill.author}")
             if skill.version:
                 click.echo(f"      Version: {skill.version}")
-            if skill.tags:
-                click.echo(f"      Tags: {', '.join(skill.tags)}")
             click.echo()
 
 
 def generate_market_html(skills):
-    all_tags = set()
-    for skill in skills:
-        all_tags.update(skill.tags)
-    all_tags = sorted(all_tags)
-
     skills_data = []
     for skill in skills:
         repo = skill.repo
@@ -188,11 +167,8 @@ def generate_market_html(skills):
             'repo': repo,
             'author': skill.author,
             'version': skill.version,
-            'tags': skill.tags,
             'install_command': f'openskills install {skill.source}'
         })
-
-    tags_html = ''.join(f'<span class="tag" data-tag="{tag}">{tag}</span>' for tag in all_tags)
 
     css_styles = """
         * {
@@ -241,39 +217,6 @@ def generate_market_html(skills):
         .search-input:focus {
             outline: none;
             border-color: #667eea;
-        }
-
-        .tags-section {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .tags-section h3 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 8px 16px;
-            margin: 5px;
-            background: #f0f0f0;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            user-select: none;
-        }
-
-        .tag:hover {
-            background: #e0e0e0;
-        }
-
-        .tag.selected {
-            background: #667eea;
-            color: white;
         }
 
         .stats {
@@ -325,23 +268,6 @@ def generate_market_html(skills):
 
         .skill-meta div {
             margin: 3px 0;
-        }
-
-        .skill-tags {
-            margin-bottom: 15px;
-        }
-
-        .skill-tags .tag {
-            font-size: 12px;
-            padding: 4px 10px;
-            margin: 3px;
-            background: #e8f4f8;
-            color: #1976d2;
-        }
-
-        .skill-tags .tag.selected {
-            background: #667eea;
-            color: white;
         }
 
         .source-section {
@@ -497,15 +423,7 @@ def generate_market_html(skills):
         <h1>🛠️ OpenSkills Market</h1>
 
         <div class="search-box">
-            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search skill name, description, or tags...">
-        </div>
-
-        <div class="tags-section">
-            <h3>📌 Filter by Tags</h3>
-            <div id="tagsContainer">{tags_html}</div>
-            <div class="stats">
-                <span id="stats"></span>
-            </div>
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search skill name or description...">
         </div>
 
         <div id="contentContainer"></div>
@@ -517,9 +435,9 @@ def generate_market_html(skills):
         let selectedTags = [];
 
         const searchInput = document.getElementById('searchInput');
-        const tagsContainer = document.getElementById('tagsContainer');
         const contentContainer = document.getElementById('contentContainer');
         const noResults = document.getElementById('noResults');
+        const stats = document.getElementById('stats');        const noResults = document.getElementById('noResults');
         const stats = document.getElementById('stats');
 
         function init() {{
@@ -571,9 +489,6 @@ def generate_market_html(skills):
                                     ${{skill.author ? `<div>👤 Author: ${{highlightText(skill.author, searchTerm)}}</div>` : ''}}
                                     ${{skill.version ? `<div>📦 Version: ${{highlightText(skill.version, searchTerm)}}</div>` : ''}}
                                 </div>
-                                <div class="skill-tags">
-                                    ${{skill.tags.map(tag => `<span class="tag" data-tag="${{escapeHtml(tag)}}">${{highlightText(tag, searchTerm)}}</span>`).join('')}}
-                                </div>
                                 <button class="copy-button" data-command="${{escapeHtml(skill.install_command)}}">
                                     📋 Copy Install Command
                                 </button>
@@ -600,37 +515,13 @@ def generate_market_html(skills):
                 const matchesSearch = !searchTermLower ||
                     skill.name.toLowerCase().includes(searchTermLower) ||
                     (skill.description && skill.description.toLowerCase().includes(searchTermLower)) ||
-                    skill.tags.some(tag => tag.toLowerCase().includes(searchTermLower)) ||
                     skill.author.toLowerCase().includes(searchTermLower);
 
-                const matchesTags = selectedTags.length === 0 ||
-                    selectedTags.every(tag => skill.tags.includes(tag));
-
-                return matchesSearch && matchesTags;
+                return matchesSearch;
             }});
 
             renderSkillsGroupedBySource(filtered, searchTerm);
             updateStats(filtered.length, skills.length);
-
-            updateTagVisibility(filtered);
-        }}
-
-        function updateTagVisibility(filteredSkills) {{
-            const visibleTags = new Set();
-            filteredSkills.forEach(skill => {{
-                skill.tags.forEach(tag => visibleTags.add(tag));
-            }});
-
-            document.querySelectorAll('#tagsContainer .tag').forEach(tagEl => {{
-                const tag = tagEl.dataset.tag;
-                if (!visibleTags.has(tag) && !selectedTags.includes(tag)) {{
-                    tagEl.style.opacity = '0.3';
-                    tagEl.style.pointerEvents = 'none';
-                }} else {{
-                    tagEl.style.opacity = '1';
-                    tagEl.style.pointerEvents = 'auto';
-                }}
-            }});
         }}
 
         function updateStats(visible, total) {{
@@ -674,23 +565,6 @@ def generate_market_html(skills):
                 if (section) {{
                     section.classList.toggle('collapsed');
                 }}
-            }}
-        }});
-
-        tagsContainer.addEventListener('click', (e) => {{
-            if (e.target.classList.contains('tag')) {{
-                const tag = e.target.dataset.tag;
-                const index = selectedTags.indexOf(tag);
-
-                if (index === -1) {{
-                    selectedTags.push(tag);
-                    e.target.classList.add('selected');
-                }} else {{
-                    selectedTags.splice(index, 1);
-                    e.target.classList.remove('selected');
-                }}
-
-                filterSkills();
             }}
         }});
 
