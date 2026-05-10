@@ -4,7 +4,7 @@ import subprocess
 import sys
 import tempfile
 import click
-from openskills.models import SkillSourceMetadata
+from openskills.models import Skill, SkillSourceType, SkillSourceMetadata
 from openskills.finder import find_all_skills, normalize_skill_names
 from openskills.metadata import read_skill_metadata, write_skill_metadata
 from openskills.yaml_utils import has_valid_frontmatter
@@ -25,8 +25,19 @@ def _update_skill_from_dir(target_path: str, source_dir: str) -> None:
         click.echo(click.style("Security error: Installation path outside target directory", fg='red'))
         sys.exit(1)
 
+    local_meta_path = os.path.join(target_path, '.openskills.json')
+    local_meta_backup = None
+    if os.path.exists(local_meta_path):
+        with open(local_meta_path, 'r', encoding='utf-8') as f:
+            local_meta_backup = f.read()
+
     shutil.rmtree(target_path, ignore_errors=True)
     shutil.copytree(source_dir, target_path, dirs_exist_ok=True)
+
+    source_meta_path = os.path.join(source_dir, '.openskills.json')
+    if not os.path.exists(source_meta_path) and local_meta_backup is not None:
+        with open(local_meta_path, 'w', encoding='utf-8') as f:
+            f.write(local_meta_backup)
 
 
 def _update_skill_from_local(target_path: str, metadata: SkillSourceMetadata, skill_name: str) -> tuple[bool, str]:
@@ -68,6 +79,89 @@ def _update_skill_from_git(target_path: str, metadata: SkillSourceMetadata, skil
             return False, f"git clone failed: {error_msg}"
 
 
+def _is_local_path(source: str) -> bool:
+    return (
+        source.startswith('/') or
+        source.startswith('./') or
+        source.startswith('../') or
+        source.startswith('~/')
+    )
+
+
+def _is_git_url(source: str) -> bool:
+    return (
+        source.startswith('git@') or
+        source.startswith('git://') or
+        source.startswith('http://') or
+        source.startswith('https://') or
+        source.endswith('.git')
+    )
+
+
+def _parse_git_source(source: str) -> dict:
+    repo_url = source
+    subpath = ''
+
+    if source.startswith('http://') or source.startswith('https://'):
+        parts = source.split('/')
+        if len(parts) >= 5:
+            repo_url = '/'.join(parts[:5])
+            if len(parts) > 5:
+                subpath = '/'.join(parts[5:])
+
+    return {
+        'source': source,
+        'source_type': 'git',
+        'repo_url': repo_url,
+        'subpath': subpath,
+    }
+
+
+def _prompt_add_source(skill: Skill) -> bool:
+    click.echo(f"\n  {click.style(skill.name, bold=True)} at {click.style(skill.path, dim=True)}")
+
+    if not click.confirm(f"  Add source metadata for '{skill.name}'?", default=True):
+        click.echo(click.style("  Skipped.", dim=True))
+        return False
+
+    source = click.prompt("  Source (git URL or local path)", type=str, default="").strip()
+    if not source:
+        click.echo(click.style("  Skipped (empty source).", dim=True))
+        return False
+
+    if _is_local_path(source):
+        from pathlib import Path
+        if source.startswith('~/'):
+            local_path = os.path.join(str(Path.home()), source[2:])
+        else:
+            local_path = os.path.abspath(source)
+
+        if not os.path.exists(local_path):
+            click.echo(click.style(f"  Error: path does not exist: {local_path}", fg='red'))
+            return False
+
+        metadata = SkillSourceMetadata(
+            source=source,
+            source_type=SkillSourceType.LOCAL,
+            local_path=local_path,
+        )
+    elif _is_git_url(source):
+        parsed = _parse_git_source(source)
+        metadata = SkillSourceMetadata(
+            source=parsed['source'],
+            source_type=SkillSourceType.GIT,
+            repo_url=parsed['repo_url'],
+            subpath=parsed['subpath'] or None,
+        )
+    else:
+        click.echo(click.style("  Error: unrecognized source format (expected git URL or local path)", fg='red'))
+        return False
+
+    write_skill_metadata(skill.path, metadata)
+    click.echo(click.style(f"  Metadata saved for '{skill.name}'.", fg='green'))
+    return True
+
+
 def _display_empty_state() -> None:
     click.echo("No skills installed.\n")
     click.echo("Install skills:")
@@ -76,10 +170,6 @@ def _display_empty_state() -> None:
 
 
 def _display_error_summaries(error_categories: dict) -> None:
-    if error_categories['missing_metadata']:
-        click.echo(click.style(f"Missing source metadata ({len(error_categories['missing_metadata'])}): {', '.join(error_categories['missing_metadata'])}", fg='yellow'))
-        click.echo(click.style("Re-install these skills once to enable updates (e.g., `openskills install <source>`).", dim=True))
-
     if error_categories['missing_local_source']:
         click.echo(click.style(f"Local source missing ({len(error_categories['missing_local_source'])}): {', '.join(error_categories['missing_local_source'])}", fg='yellow'))
 
@@ -133,12 +223,15 @@ def update_skills(skill_names: str | list[str] | None) -> None:
         'clone_failures': []
     }
 
+    skills_without_metadata: list[Skill] = []
+
     for skill in targets:
         metadata = read_skill_metadata(skill.path)
 
         if not metadata:
-            click.echo(click.style(f"Skipped: {skill.name} (no source metadata; re-install once to enable updates)", fg='yellow'))
+            click.echo(click.style(f"Skipped: {skill.name} (no source metadata)", fg='yellow'))
             error_categories['missing_metadata'].append(skill.name)
+            skills_without_metadata.append(skill)
             skipped += 1
             continue
 
@@ -175,6 +268,11 @@ def update_skills(skill_names: str | list[str] | None) -> None:
                 error_categories['clone_failures'].append(skill.name)
             skipped += 1
 
-    click.echo(click.style(f"Summary: {updated} updated, {skipped} skipped ({len(targets)} total)", dim=True))
+    click.echo(click.style(f"\nSummary: {updated} updated, {skipped} skipped ({len(targets)} total)", dim=True))
 
     _display_error_summaries(error_categories)
+
+    if skills_without_metadata:
+        click.echo(click.style(f"\n{len(skills_without_metadata)} skill(s) have no source metadata. Add sources to enable future updates:", bold=True))
+        for skill in skills_without_metadata:
+            _prompt_add_source(skill)

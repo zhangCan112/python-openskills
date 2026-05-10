@@ -6,7 +6,14 @@ import click
 import pytest
 
 from openskills.models import Skill, SkillLocation, SkillSourceMetadata, SkillSourceType
-from openskills.updater import _is_path_inside, update_skills
+from openskills.updater import (
+    _is_path_inside,
+    _is_local_path,
+    _is_git_url,
+    _parse_git_source,
+    _prompt_add_source,
+    update_skills,
+)
 
 
 def _make_skill(name: str, path: Optional[str] = None) -> Skill:
@@ -87,7 +94,8 @@ class TestUpdateSkillsFiltering:
     def test_reports_missing_skills(self, _mock_meta, capsys):
         skill_a = _make_skill("alpha")
         with patch("openskills.updater.find_all_skills", return_value=[skill_a]):
-            update_skills(["alpha", "ghost"])
+            with patch("openskills.updater._prompt_add_source"):
+                update_skills(["alpha", "ghost"])
 
         output = capsys.readouterr().out
         assert "Skipping missing skills: ghost" in output
@@ -110,7 +118,8 @@ class TestUpdateSkillsNoMetadata:
     def test_skips_skills_without_metadata(self, _mock_meta, capsys):
         skill = _make_skill("no-meta")
         with patch("openskills.updater.find_all_skills", return_value=[skill]):
-            update_skills(None)
+            with patch("openskills.updater._prompt_add_source"):
+                update_skills(None)
 
         output = capsys.readouterr().out
         assert "Skipped: no-meta" in output
@@ -218,8 +227,187 @@ class TestUpdateSkillsSummary:
     def test_summary_shows_skipped_count(self, _mock_meta, capsys):
         skill = _make_skill("skip-me")
         with patch("openskills.updater.find_all_skills", return_value=[skill]):
-            update_skills(None)
+            with patch("openskills.updater._prompt_add_source"):
+                update_skills(None)
 
         output = capsys.readouterr().out
         assert "0 updated" in output
         assert "1 skipped" in output
+
+
+class TestIsLocalPath:
+    def test_absolute_path(self):
+        assert _is_local_path("/foo/bar") is True
+
+    def test_relative_dot_slash(self):
+        assert _is_local_path("./foo") is True
+
+    def test_relative_dot_dot_slash(self):
+        assert _is_local_path("../foo") is True
+
+    def test_tilde_slash(self):
+        assert _is_local_path("~/foo") is True
+
+    def test_https_url(self):
+        assert _is_local_path("https://github.com/owner/repo") is False
+
+    def test_plain_name(self):
+        assert _is_local_path("pdf") is False
+
+
+class TestIsGitUrl:
+    def test_https_url(self):
+        assert _is_git_url("https://github.com/owner/repo") is True
+
+    def test_http_url(self):
+        assert _is_git_url("http://example.com/repo") is True
+
+    def test_git_at_url(self):
+        assert _is_git_url("git@github.com:owner/repo") is True
+
+    def test_git_protocol(self):
+        assert _is_git_url("git://example.com/repo") is True
+
+    def test_dot_git_suffix(self):
+        assert _is_git_url("repo.git") is True
+
+    def test_local_path(self):
+        assert _is_git_url("/foo/bar") is False
+
+    def test_plain_name(self):
+        assert _is_git_url("pdf") is False
+
+
+class TestParseGitSource:
+    def test_simple_repo_url(self):
+        result = _parse_git_source("https://github.com/owner/repo")
+        assert result["repo_url"] == "https://github.com/owner/repo"
+        assert result["subpath"] == ""
+
+    def test_repo_with_subpath(self):
+        result = _parse_git_source("https://github.com/owner/repo/skills/pdf")
+        assert result["repo_url"] == "https://github.com/owner/repo"
+        assert result["subpath"] == "skills/pdf"
+
+    def test_repo_with_deep_subpath(self):
+        result = _parse_git_source("https://github.com/owner/repo/a/b/c")
+        assert result["repo_url"] == "https://github.com/owner/repo"
+        assert result["subpath"] == "a/b/c"
+
+    def test_git_at_url(self):
+        result = _parse_git_source("git@github.com:owner/repo")
+        assert result["repo_url"] == "git@github.com:owner/repo"
+        assert result["subpath"] == ""
+
+    def test_source_field_preserved(self):
+        url = "https://github.com/owner/repo/skills/pdf"
+        result = _parse_git_source(url)
+        assert result["source"] == url
+
+
+class TestPromptAddSource:
+    @patch("openskills.updater.write_skill_metadata")
+    @patch("openskills.updater._is_git_url", return_value=True)
+    @patch("openskills.updater._parse_git_source")
+    def test_add_git_source(self, mock_parse, _mock_git, mock_write, capsys):
+        mock_parse.return_value = {
+            "source": "https://github.com/owner/repo/skills/pdf",
+            "source_type": "git",
+            "repo_url": "https://github.com/owner/repo",
+            "subpath": "skills/pdf",
+        }
+        skill = _make_skill("pdf")
+
+        with patch("click.confirm", return_value=True):
+            with patch("click.prompt", return_value="https://github.com/owner/repo/skills/pdf"):
+                result = _prompt_add_source(skill)
+
+        assert result is True
+        mock_write.assert_called_once()
+        meta = mock_write.call_args[0][1]
+        assert meta.source_type == SkillSourceType.GIT
+        assert meta.repo_url == "https://github.com/owner/repo"
+        assert meta.subpath == "skills/pdf"
+
+    @patch("openskills.updater.write_skill_metadata")
+    @patch("openskills.updater._is_local_path", return_value=True)
+    @patch("openskills.updater._is_git_url", return_value=False)
+    def test_add_local_source(self, _mock_git, _mock_local, mock_write, capsys):
+        skill = _make_skill("my-skill")
+
+        with patch("click.confirm", return_value=True):
+            with patch("click.prompt", return_value="./local/path"):
+                with patch("os.path.exists", return_value=True):
+                    result = _prompt_add_source(skill)
+
+        assert result is True
+        mock_write.assert_called_once()
+        meta = mock_write.call_args[0][1]
+        assert meta.source_type == SkillSourceType.LOCAL
+
+    def test_user_declines(self, capsys):
+        skill = _make_skill("pdf")
+
+        with patch("click.confirm", return_value=False):
+            result = _prompt_add_source(skill)
+
+        assert result is False
+
+    def test_empty_source_skipped(self, capsys):
+        skill = _make_skill("pdf")
+
+        with patch("click.confirm", return_value=True):
+            with patch("click.prompt", return_value=""):
+                result = _prompt_add_source(skill)
+
+        assert result is False
+
+    @patch("openskills.updater._is_local_path", return_value=False)
+    @patch("openskills.updater._is_git_url", return_value=False)
+    def test_unrecognized_format(self, _mock_git, _mock_local, capsys):
+        skill = _make_skill("pdf")
+
+        with patch("click.confirm", return_value=True):
+            with patch("click.prompt", return_value="just-a-name"):
+                result = _prompt_add_source(skill)
+
+        assert result is False
+
+
+class TestUpdateSkillsPromptMetadata:
+    @patch("openskills.updater.read_skill_metadata", return_value=None)
+    def test_prompts_for_missing_metadata(self, _mock_meta, capsys):
+        skill = _make_skill("no-meta")
+        with patch("openskills.updater.find_all_skills", return_value=[skill]):
+            with patch("openskills.updater._prompt_add_source") as mock_prompt:
+                update_skills(None)
+
+        mock_prompt.assert_called_once_with(skill)
+
+    @patch("openskills.updater.read_skill_metadata", return_value=None)
+    def test_no_prompt_when_single_skill_not_found(self, _mock_meta, capsys):
+        skill = _make_skill("alpha")
+        with patch("openskills.updater.find_all_skills", return_value=[skill]):
+            with patch("openskills.updater._prompt_add_source") as mock_prompt:
+                update_skills(["nonexistent"])
+
+        mock_prompt.assert_not_called()
+
+    @patch("openskills.updater.read_skill_metadata", return_value=None)
+    def test_prompts_for_specific_skill_without_metadata(self, _mock_meta, capsys):
+        skill = _make_skill("pdf")
+        with patch("openskills.updater.find_all_skills", return_value=[skill]):
+            with patch("openskills.updater._prompt_add_source") as mock_prompt:
+                update_skills(["pdf"])
+
+        mock_prompt.assert_called_once_with(skill)
+
+    @patch("openskills.updater.read_skill_metadata", return_value=None)
+    def test_multiple_skills_without_metadata(self, _mock_meta, capsys):
+        skill_a = _make_skill("alpha")
+        skill_b = _make_skill("beta")
+        with patch("openskills.updater.find_all_skills", return_value=[skill_a, skill_b]):
+            with patch("openskills.updater._prompt_add_source") as mock_prompt:
+                update_skills(None)
+
+        assert mock_prompt.call_count == 2
