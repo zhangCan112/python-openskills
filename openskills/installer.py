@@ -13,6 +13,7 @@ from openskills.yaml_utils import has_valid_frontmatter, extract_yaml_field
 from openskills.metadata import write_skill_metadata, read_skill_metadata
 from openskills.dirs import get_skills_dir, get_cache_dir
 from openskills.market import find_skill_by_name
+from openskills.finder import find_skill
 from openskills.recommends import resolve_recommendation_tree
 
 
@@ -479,35 +480,54 @@ def _install_recommendations(skill_dir: str, options: InstallOptions) -> None:
         return
 
     missing = _resolve_missing_recs(tree)
+    satisfied_names = [d["name"] for d in tree.get("recs", []) if find_skill(d["name"])]
+
     if not missing:
-        satisfied = [d["name"] for d in tree.get("recs", []) if find_skill(d["name"])]
-        if satisfied:
-            click.echo(click.style("All recommendations satisfied.", fg='green'))
+        if satisfied_names:
+            click.echo(click.style("\nAll recommendations satisfied:", fg='green'))
+            for name in satisfied_names:
+                click.echo(f"  ✓ {name}")
         return
 
-    click.echo(f"\n{click.style('Checking recommendations...', bold=True)}")
-    click.echo(click.style("The following recommendations will be installed:", bold=True))
+    click.echo(f"\n{click.style('Recommendations:', bold=True)}")
+
+    click.echo(click.style("  Missing:", fg='yellow'))
     for rec in missing:
-        click.echo(f"  - {rec['name']} (from {rec['source']})")
+        link = _terminal_link(rec['source'], _format_source(rec['source']))
+        click.echo(f"    - {click.style(rec['name'], bold=True)} ({link})")
 
-    satisfied = [d["name"] for d in tree.get("recs", []) if find_skill(d["name"])]
-    if satisfied:
-        click.echo(click.style("\nAlready installed:", dim=True))
-        for name in satisfied:
-            click.echo(f"  - {name}")
+    if satisfied_names:
+        click.echo(click.style("  Already installed:", fg='green'))
+        for name in satisfied_names:
+            click.echo(f"    ✓ {name}")
 
-    if not options.yes:
-        if not click.confirm("\nInstall these recommendations?", default=True):
-            click.echo(click.style(
-                f"Warning: skill has uninstalled recommendations. "
-                f"Run 'openskills recommends check' to see details.", fg='yellow'
-            ))
-            return
+    if options.yes:
+        to_install = [rec['name'] for rec in missing]
+    else:
+        choices = [
+            {
+                'name': f"{rec['name']} ({_format_source(rec['source'])})",
+                'value': rec['name'],
+                'checked': True
+            }
+            for rec in missing
+        ]
+        to_install = prompt_for_selection('Select recommendations to install', choices)
 
-    for rec in missing:
-        click.echo(f"  Installing recommendation: {click.style(rec['name'], bold=True)}")
-        install_skill(rec['source'], options)
-        click.echo(click.style(f"  ✓ {rec['name']} installed", fg='green'))
+    if not to_install:
+        click.echo(click.style(
+            "Warning: skill has uninstalled recommendations. "
+            "Run 'openskills recommends check' to see details.", fg='yellow'
+        ))
+        return
+
+    selected_sources = {rec['name']: rec['source'] for rec in missing if rec['name'] in to_install}
+
+    for name in to_install:
+        source = selected_sources.get(name, "")
+        click.echo(f"  Installing: {click.style(name, bold=True)}")
+        install_skill(source, options)
+        click.echo(click.style(f"  ✓ {name} installed", fg='green'))
 
     click.echo(click.style("\nAll recommendations satisfied.", fg='green'))
 

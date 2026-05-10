@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -287,3 +287,56 @@ class TestFormatSource:
     def test_local_path(self):
         result = _format_source("./local-skill")
         assert result == "./local-skill"
+
+
+class TestInstallRecommendations:
+    def test_no_missing_does_not_prompt(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_recommendations
+        from openskills.models import InstallOptions
+        monkeypatch.setattr("openskills.installer.resolve_recommendation_tree",
+                            lambda d: {"name": "skill", "recs": []})
+        monkeypatch.setattr("openskills.installer.find_skill", lambda n: None)
+        _install_recommendations(str(tmp_path), InstallOptions())
+
+    def test_missing_recs_prompt_selective(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_recommendations
+        from openskills.models import InstallOptions
+        tree = {
+            "name": "skill",
+            "recs": [
+                {"name": "rec-a", "source": "https://github.com/owner/rec-a", "recs": []},
+                {"name": "rec-b", "source": "https://github.com/owner/rec-b", "recs": []},
+            ]
+        }
+        monkeypatch.setattr("openskills.installer.resolve_recommendation_tree",
+                            lambda d: tree)
+        monkeypatch.setattr("openskills.installer.find_skill", lambda n: None)
+        monkeypatch.setattr("openskills.installer.prompt_for_selection",
+                            lambda msg, choices: ["rec-a"])
+        mock_install = MagicMock()
+        monkeypatch.setattr("openskills.installer.install_skill", mock_install)
+
+        _install_recommendations(str(tmp_path), InstallOptions())
+
+        mock_install.assert_called_once()
+        assert mock_install.call_args[0][0] == "https://github.com/owner/rec-a"
+
+    def test_missing_recs_yes_flag_installs_all(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_recommendations
+        from openskills.models import InstallOptions
+        tree = {
+            "name": "skill",
+            "recs": [
+                {"name": "rec-a", "source": "https://github.com/owner/rec-a", "recs": []},
+                {"name": "rec-b", "source": "https://github.com/owner/rec-b", "recs": []},
+            ]
+        }
+        monkeypatch.setattr("openskills.installer.resolve_recommendation_tree",
+                            lambda d: tree)
+        monkeypatch.setattr("openskills.installer.find_skill", lambda n: None)
+        mock_install = MagicMock()
+        monkeypatch.setattr("openskills.installer.install_skill", mock_install)
+
+        _install_recommendations(str(tmp_path), InstallOptions(yes=True))
+
+        assert mock_install.call_count == 2
