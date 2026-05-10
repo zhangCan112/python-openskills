@@ -7,6 +7,7 @@ from typing import Any
 import click
 
 from openskills.finder import find_skill, find_all_skills
+from openskills.dependency import get_dependents
 
 
 def _prompt_for_selection(message: str, choices: list[dict[str, Any]]) -> list[str]:
@@ -38,6 +39,19 @@ def remove_skill(skill_name: str) -> None:
     if not skill:
         click.echo(f"Error: Skill '{skill_name}' not found", err=True)
         sys.exit(1)
+
+    dependents = get_dependents(skill_name)
+    if dependents:
+        click.echo(click.style(f"Warning: The following skills depend on \"{skill_name}\":", fg='yellow'))
+        for dep in dependents:
+            click.echo(f"  - {dep['name']} ({dep['location']})")
+        click.echo()
+        if not click.confirm(
+            click.style(f"Removing \"{skill_name}\" will break these skills. Continue anyway?", fg='yellow'),
+            default=False
+        ):
+            click.echo(click.style(f"Aborted. \"{skill_name}\" was not removed.", fg='yellow'))
+            return
 
     shutil.rmtree(skill.base_dir, ignore_errors=True)
 

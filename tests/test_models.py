@@ -1,6 +1,7 @@
 from openskills.models import (
     InstallOptions,
     Skill,
+    SkillDependency,
     SkillLocation,
     SkillLocationInfo,
     SkillSourceMetadata,
@@ -98,3 +99,33 @@ def test_install_options_non_defaults():
     opts = InstallOptions(global_install=True, yes=True)
     assert opts.global_install is True
     assert opts.yes is True
+
+
+def test_skill_dependency_creation():
+    dep = SkillDependency(name="brainstorming", source="https://github.com/owner/repo/skills/brainstorming")
+    assert dep.name == "brainstorming"
+    assert dep.source == "https://github.com/owner/repo/skills/brainstorming"
+
+
+def test_skill_source_metadata_depends_on_default():
+    meta = SkillSourceMetadata(
+        source="https://github.com/example/repo",
+        source_type=SkillSourceType.GIT,
+    )
+    assert meta.depends_on is None
+
+
+def test_skill_source_metadata_with_depends_on():
+    deps = [
+        SkillDependency(name="brainstorming", source="https://github.com/anthropics/skills/skills/brainstorming"),
+        SkillDependency(name="writing-plans", source="superpowers"),
+    ]
+    meta = SkillSourceMetadata(
+        source="https://github.com/example/repo",
+        source_type=SkillSourceType.GIT,
+        depends_on=deps,
+    )
+    assert meta.depends_on is not None
+    assert len(meta.depends_on) == 2
+    assert meta.depends_on[0].name == "brainstorming"
+    assert meta.depends_on[1].source == "superpowers"

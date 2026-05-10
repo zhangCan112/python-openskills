@@ -1,7 +1,8 @@
 import builtins
+import types
 from unittest.mock import MagicMock
 from click.testing import CliRunner
-from openskills.cli import cli
+from openskills.cli import cli, _format_tree
 from openskills.models import Skill, SkillLocation
 
 
@@ -128,3 +129,58 @@ def test_market_search(monkeypatch):
     result = runner.invoke(cli, ['market', 'search', 'keyword'])
     assert result.exit_code == 0
     mock_market_search.assert_called_once_with('keyword')
+
+
+def test_deps_check_no_args(monkeypatch):
+    monkeypatch.setattr('openskills.cli.find_all_skills', lambda: [])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['deps', 'check'])
+    assert result.exit_code == 0
+
+
+def test_deps_check_with_skill(monkeypatch):
+    monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
+    monkeypatch.setattr('openskills.cli.check_dependencies', lambda d: {"missing": [], "satisfied": []})
+    runner = CliRunner()
+    result = runner.invoke(cli, ['deps', 'check', 'my-skill'])
+    assert result.exit_code == 0
+
+
+def test_deps_tree_no_args(monkeypatch):
+    monkeypatch.setattr('openskills.cli.find_all_skills', lambda: [])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['deps', 'tree'])
+    assert result.exit_code == 0
+
+
+def test_deps_tree_with_skill(monkeypatch):
+    monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
+    monkeypatch.setattr('openskills.cli.resolve_dependency_tree', lambda d: {"name": "test", "deps": []})
+    runner = CliRunner()
+    result = runner.invoke(cli, ['deps', 'tree', 'my-skill'])
+    assert result.exit_code == 0
+
+
+def test_deps_install_with_skill(monkeypatch):
+    monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
+    monkeypatch.setattr('openskills.cli.check_dependencies', lambda d: {"missing": [], "satisfied": []})
+    runner = CliRunner()
+    result = runner.invoke(cli, ['deps', 'install', 'my-skill'])
+    assert result.exit_code == 0
+
+
+def test_deps_tree_output_format():
+    tree = {
+        "name": "root",
+        "deps": [
+            {"name": "child-a", "deps": [
+                {"name": "grandchild", "deps": []}
+            ]},
+            {"name": "child-b", "deps": []},
+        ],
+    }
+    result = _format_tree(tree)
+    assert "root" in result
+    assert "child-a" in result
+    assert "child-b" in result
+    assert "grandchild" in result

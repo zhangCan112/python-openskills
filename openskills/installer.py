@@ -10,9 +10,10 @@ import click
 
 from openskills.models import SkillSourceType, SkillSourceMetadata, InstallOptions
 from openskills.yaml_utils import has_valid_frontmatter, extract_yaml_field
-from openskills.metadata import write_skill_metadata
+from openskills.metadata import write_skill_metadata, read_skill_metadata
 from openskills.dirs import get_skills_dir, get_cache_dir
 from openskills.market import find_skill_by_name
+from openskills.dependency import resolve_dependency_tree
 
 ANTHROPIC_MARKETPLACE_SKILLS = [
     'xlsx',
@@ -313,6 +314,10 @@ def install_from_repo(
 
     click.echo(click.style(f"\n[OK] Installation complete: {installed_count} skill(s) installed", fg='green'))
 
+    if installed_count == 1 and skills_to_install:
+        installed_skill_dir = os.path.join(target_dir, skills_to_install[0]['skill_name'])
+        _install_dependencies(installed_skill_dir, options)
+
 
 def install_single_local_skill(
     skill_dir: str,
@@ -356,6 +361,8 @@ def install_single_local_skill(
 
     click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
     click.echo(f"   Location: {target_path}")
+
+    _install_dependencies(target_path, options)
 
 
 def install_from_local(
@@ -426,6 +433,60 @@ def try_install_from_market(skill_name: str, options, install_func) -> bool:
             except click.exceptions.Abort:
                 click.echo("\nInstallation cancelled.")
                 return False
+
+
+def _resolve_missing_deps(tree: dict) -> list[dict]:
+    missing = []
+    _collect_missing(tree, missing)
+    return missing
+
+
+def _collect_missing(tree: dict, missing: list[dict]) -> None:
+    for dep in tree.get("deps", []):
+        if not find_skill(dep["name"]):
+            missing.append({"name": dep["name"], "source": dep.get("source", "")})
+        _collect_missing(dep, missing)
+
+
+def _install_dependencies(skill_dir: str, options: InstallOptions) -> None:
+    try:
+        tree = resolve_dependency_tree(skill_dir)
+    except ValueError as e:
+        click.echo(click.style(f"Error: {e}", fg='red'))
+        return
+
+    missing = _resolve_missing_deps(tree)
+    if not missing:
+        satisfied = [d["name"] for d in tree.get("deps", []) if find_skill(d["name"])]
+        if satisfied:
+            click.echo(click.style("All dependencies satisfied.", fg='green'))
+        return
+
+    click.echo(f"\n{click.style('Checking dependencies...', bold=True)}")
+    click.echo(click.style("The following dependencies will be installed:", bold=True))
+    for dep in missing:
+        click.echo(f"  - {dep['name']} (from {dep['source']})")
+
+    satisfied = [d["name"] for d in tree.get("deps", []) if find_skill(d["name"])]
+    if satisfied:
+        click.echo(click.style("\nAlready installed:", dim=True))
+        for name in satisfied:
+            click.echo(f"  - {name}")
+
+    if not options.yes:
+        if not click.confirm("\nInstall these dependencies?", default=True):
+            click.echo(click.style(
+                f"Warning: skill has unsatisfied dependencies. "
+                f"Run 'openskills deps check' to see details.", fg='yellow'
+            ))
+            return
+
+    for dep in missing:
+        click.echo(f"  Installing dependency: {click.style(dep['name'], bold=True)}")
+        install_skill(dep['source'], options)
+        click.echo(click.style(f"  ✓ {dep['name']} installed", fg='green'))
+
+    click.echo(click.style("\nAll dependencies satisfied.", fg='green'))
 
 
 def install_skill(source: str, options: InstallOptions) -> None:
@@ -567,3 +628,5 @@ def _install_from_subpath(
 
     click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
     click.echo(f"   Location: {target_path}")
+
+    _install_dependencies(target_path, options)
