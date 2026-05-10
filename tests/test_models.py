@@ -1,7 +1,7 @@
 from openskills.models import (
     InstallOptions,
     Skill,
-    SkillDependency,
+    SkillRecommendation,
     SkillLocation,
     SkillLocationInfo,
     SkillSourceMetadata,
@@ -101,31 +101,31 @@ def test_install_options_non_defaults():
     assert opts.yes is True
 
 
-def test_skill_dependency_creation():
-    dep = SkillDependency(name="brainstorming", source="https://github.com/owner/repo/skills/brainstorming")
-    assert dep.name == "brainstorming"
-    assert dep.source == "https://github.com/owner/repo/skills/brainstorming"
+def test_skill_recommendation_creation():
+    rec = SkillRecommendation(name="brainstorming", source="https://github.com/owner/repo/skills/brainstorming")
+    assert rec.name == "brainstorming"
+    assert rec.source == "https://github.com/owner/repo/skills/brainstorming"
 
 
-def test_skill_source_metadata_depends_on_default():
+def test_skill_source_metadata_recommends_default():
     meta = SkillSourceMetadata(
         source="https://github.com/example/repo",
         source_type=SkillSourceType.GIT,
     )
-    assert meta.depends_on is None
+    assert meta.recommends is None
 
 
-def test_skill_source_metadata_with_depends_on():
-    deps = [
-        SkillDependency(name="brainstorming", source="https://github.com/anthropics/skills/skills/brainstorming"),
-        SkillDependency(name="writing-plans", source="superpowers"),
+def test_skill_source_metadata_with_recommends():
+    recs = [
+        SkillRecommendation(name="brainstorming", source="https://github.com/anthropics/skills/skills/brainstorming"),
+        SkillRecommendation(name="writing-plans", source="superpowers"),
     ]
     meta = SkillSourceMetadata(
         source="https://github.com/example/repo",
         source_type=SkillSourceType.GIT,
-        depends_on=deps,
+        recommends=recs,
     )
-    assert meta.depends_on is not None
-    assert len(meta.depends_on) == 2
-    assert meta.depends_on[0].name == "brainstorming"
-    assert meta.depends_on[1].source == "superpowers"
+    assert meta.recommends is not None
+    assert len(meta.recommends) == 2
+    assert meta.recommends[0].name == "brainstorming"
+    assert meta.recommends[1].source == "superpowers"

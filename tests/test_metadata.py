@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 from openskills.metadata import read_skill_metadata, write_skill_metadata
-from openskills.models import SkillDependency, SkillSourceMetadata, SkillSourceType
+from openskills.models import SkillRecommendation, SkillSourceMetadata, SkillSourceType
 
 
 def test_read_skill_metadata_returns_none_for_nonexistent_directory(tmp_path):
@@ -97,23 +97,23 @@ def test_read_after_write_returns_correct_metadata(tmp_path):
     assert result.installed_at == meta.installed_at
 
 
-def test_read_skill_metadata_with_depends_on(tmp_path):
+def test_read_skill_metadata_with_recommends(tmp_path):
     data = {
         "source": "https://github.com/example/repo",
         "source_type": "git",
-        "depends_on": [
+        "recommends": [
             {"name": "brainstorming", "source": "https://github.com/anthropics/skills/skills/brainstorming"}
         ],
     }
     tmp_path.joinpath(".openskills.json").write_text(json.dumps(data))
     result = read_skill_metadata(str(tmp_path))
     assert result is not None
-    assert result.depends_on is not None
-    assert len(result.depends_on) == 1
-    assert result.depends_on[0].name == "brainstorming"
+    assert result.recommends is not None
+    assert len(result.recommends) == 1
+    assert result.recommends[0].name == "brainstorming"
 
 
-def test_read_skill_metadata_without_depends_on(tmp_path):
+def test_read_skill_metadata_without_recommends(tmp_path):
     data = {
         "source": "https://github.com/example/repo",
         "source_type": "git",
@@ -121,47 +121,47 @@ def test_read_skill_metadata_without_depends_on(tmp_path):
     tmp_path.joinpath(".openskills.json").write_text(json.dumps(data))
     result = read_skill_metadata(str(tmp_path))
     assert result is not None
-    assert result.depends_on is None
+    assert result.recommends is None
 
 
-def test_write_skill_metadata_with_depends_on(tmp_path):
+def test_write_skill_metadata_with_recommends(tmp_path):
     meta = SkillSourceMetadata(
         source="https://github.com/example/repo",
         source_type=SkillSourceType.GIT,
-        depends_on=[
-            SkillDependency(name="brainstorming", source="https://github.com/anthropics/skills/skills/brainstorming"),
+        recommends=[
+            SkillRecommendation(name="brainstorming", source="https://github.com/anthropics/skills/skills/brainstorming"),
         ],
     )
     write_skill_metadata(str(tmp_path), meta)
     data = json.loads(tmp_path.joinpath(".openskills.json").read_text())
-    assert "depends_on" in data
-    assert data["depends_on"][0]["name"] == "brainstorming"
+    assert "recommends" in data
+    assert data["recommends"][0]["name"] == "brainstorming"
 
 
-def test_write_skill_metadata_without_depends_on(tmp_path):
+def test_write_skill_metadata_without_recommends(tmp_path):
     meta = SkillSourceMetadata(
         source="https://github.com/example/repo",
         source_type=SkillSourceType.GIT,
     )
     write_skill_metadata(str(tmp_path), meta)
     data = json.loads(tmp_path.joinpath(".openskills.json").read_text())
-    assert data.get("depends_on") is None
+    assert data.get("recommends") is None
 
 
-def test_depends_on_roundtrip(tmp_path):
-    deps = [
-        SkillDependency(name="brainstorming", source="https://github.com/anthropics/skills/skills/brainstorming"),
-        SkillDependency(name="writing-plans", source="superpowers"),
+def test_recommends_roundtrip(tmp_path):
+    recs = [
+        SkillRecommendation(name="brainstorming", source="https://github.com/anthropics/skills/skills/brainstorming"),
+        SkillRecommendation(name="writing-plans", source="superpowers"),
     ]
     meta = SkillSourceMetadata(
         source="https://github.com/example/repo",
         source_type=SkillSourceType.GIT,
-        depends_on=deps,
+        recommends=recs,
     )
     write_skill_metadata(str(tmp_path), meta)
     result = read_skill_metadata(str(tmp_path))
     assert result is not None
-    assert result.depends_on is not None
-    assert len(result.depends_on) == 2
-    assert result.depends_on[0].name == "brainstorming"
-    assert result.depends_on[1].source == "superpowers"
+    assert result.recommends is not None
+    assert len(result.recommends) == 2
+    assert result.recommends[0].name == "brainstorming"
+    assert result.recommends[1].source == "superpowers"

@@ -6,7 +6,7 @@ from openskills.installer import install_skill
 from openskills.updater import update_skills
 from openskills.remover import remove_skill, manage_skills
 from openskills.market import market_list, market_search
-from openskills.dependency import resolve_dependency_tree, check_dependencies
+from openskills.recommends import resolve_recommendation_tree, check_recommendations
 
 
 @click.group(invoke_without_command=True)
@@ -91,85 +91,85 @@ def search(keyword):
 
 
 @cli.group()
-def deps():
-    """Manage skill dependencies"""
+def recommends():
+    """Manage skill recommendations"""
     pass
 
 
-@deps.command('check')
+@recommends.command('check')
 @click.argument('skill_name', required=False)
-def deps_check(skill_name):
-    """Check dependency satisfaction"""
+def recommends_check(skill_name):
+    """Check recommendation satisfaction"""
     if skill_name:
         skill = find_skill(skill_name)
         if not skill:
             click.echo(f"Error: Skill '{skill_name}' not found")
             return
-        results = check_dependencies(skill.base_dir)
+        results = check_recommendations(skill.base_dir)
         if results["missing"]:
-            click.echo(click.style(f"✗ {skill_name} has unsatisfied dependencies:", fg='red'))
-            for dep in results["missing"]:
-                click.echo(f"    - {dep.name} (not installed)")
+            click.echo(click.style(f"✗ {skill_name} has uninstalled recommendations:", fg='red'))
+            for rec in results["missing"]:
+                click.echo(f"    - {rec.name} (not installed)")
         else:
-            click.echo(click.style(f"✓ {skill_name} - all dependencies satisfied", fg='green'))
+            click.echo(click.style(f"✓ {skill_name} - all recommendations satisfied", fg='green'))
     else:
         skills = find_all_skills()
         issues = 0
         ok = 0
         for skill in skills:
-            results = check_dependencies(skill.path)
+            results = check_recommendations(skill.path)
             if results["missing"]:
                 issues += 1
-                click.echo(click.style(f"✗ {skill.name} has unsatisfied dependencies:", fg='red'))
-                for dep in results["missing"]:
-                    click.echo(f"    - {dep.name} (not installed)")
+                click.echo(click.style(f"✗ {skill.name} has uninstalled recommendations:", fg='red'))
+                for rec in results["missing"]:
+                    click.echo(f"    - {rec.name} (not installed)")
             elif results["satisfied"]:
                 ok += 1
-                click.echo(click.style(f"✓ {skill.name} - all dependencies satisfied", fg='green'))
-        click.echo(click.style(f"\nSummary: {issues} skill(s) with issues, {ok} skill(s) OK", dim=True))
+                click.echo(click.style(f"✓ {skill.name} - all recommendations satisfied", fg='green'))
+        click.echo(click.style(f"\nSummary: {issues} skill(s) with uninstalled recommendations, {ok} skill(s) OK", dim=True))
 
 
-@deps.command('tree')
+@recommends.command('tree')
 @click.argument('skill_name', required=False)
-def deps_tree(skill_name):
-    """Display dependency tree"""
+def recommends_tree(skill_name):
+    """Display recommendation tree"""
     if skill_name:
         skill = find_skill(skill_name)
         if not skill:
             click.echo(f"Error: Skill '{skill_name}' not found")
             return
-        tree = resolve_dependency_tree(skill.base_dir)
+        tree = resolve_recommendation_tree(skill.base_dir)
         click.echo(_format_tree(tree))
     else:
         skills = find_all_skills()
         for skill in sorted(skills, key=lambda s: s.name):
-            tree = resolve_dependency_tree(skill.path)
+            tree = resolve_recommendation_tree(skill.path)
             click.echo(_format_tree(tree))
 
 
-@deps.command('install')
+@recommends.command('install')
 @click.argument('skill_name')
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation')
-def deps_install(skill_name, yes):
-    """Install missing dependencies for a skill"""
+def recommends_install(skill_name, yes):
+    """Install missing recommendations for a skill"""
     skill = find_skill(skill_name)
     if not skill:
         click.echo(f"Error: Skill '{skill_name}' not found")
         return
-    results = check_dependencies(skill.base_dir)
+    results = check_recommendations(skill.base_dir)
     if not results["missing"]:
-        click.echo(click.style("All dependencies already satisfied.", fg='green'))
+        click.echo(click.style("All recommendations already satisfied.", fg='green'))
         return
-    click.echo(click.style("The following dependencies will be installed:", bold=True))
-    for dep in results["missing"]:
-        click.echo(f"  - {dep.name} (from {dep.source})")
+    click.echo(click.style("The following recommendations will be installed:", bold=True))
+    for rec in results["missing"]:
+        click.echo(f"  - {rec.name} (from {rec.source})")
     if not yes:
-        if not click.confirm("\nInstall these dependencies?", default=True):
+        if not click.confirm("\nInstall these recommendations?", default=True):
             return
     options = InstallOptions(yes=yes)
-    for dep in results["missing"]:
-        click.echo(f"  Installing: {click.style(dep.name, bold=True)}")
-        install_skill(dep.source, options)
+    for rec in results["missing"]:
+        click.echo(f"  Installing: {click.style(rec.name, bold=True)}")
+        install_skill(rec.source, options)
 
 
 def _format_tree(node: dict, prefix: str = "", is_last: bool = True) -> str:
@@ -183,14 +183,14 @@ def _format_tree(node: dict, prefix: str = "", is_last: bool = True) -> str:
     child_prefix = prefix + ("    " if is_last else "│   ")
     if not prefix:
         child_prefix = "  "
-        for i, dep in enumerate(node.get('deps', [])):
-            last = (i == len(node.get('deps', [])) - 1)
-            sub = _format_tree(dep, child_prefix, last)
+        for i, rec in enumerate(node.get('recs', [])):
+            last = (i == len(node.get('recs', [])) - 1)
+            sub = _format_tree(rec, child_prefix, last)
             lines.append(sub)
     else:
-        for i, dep in enumerate(node.get('deps', [])):
-            last = (i == len(node.get('deps', [])) - 1)
-            sub = _format_tree(dep, child_prefix, last)
+        for i, rec in enumerate(node.get('recs', [])):
+            last = (i == len(node.get('recs', [])) - 1)
+            sub = _format_tree(rec, child_prefix, last)
             lines.append(sub)
 
     return "\n".join(lines)

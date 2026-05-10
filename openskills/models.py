@@ -13,7 +13,7 @@ class SkillSourceType(str, Enum):
 
 
 @dataclass
-class SkillDependency:
+class SkillRecommendation:
     name: str
     source: str
 
@@ -40,7 +40,7 @@ class SkillSourceMetadata:
     repo_url: str | None = None
     subpath: str | None = None
     local_path: str | None = None
-    depends_on: list[SkillDependency] | None = None
+    recommends: list[SkillRecommendation] | None = None
     installed_at: str | None = None
 
 

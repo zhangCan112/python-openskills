@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from openskills.models import SkillDependency, SkillSourceMetadata
+from openskills.models import SkillRecommendation, SkillSourceMetadata
 
 SKILL_METADATA_FILE = '.openskills.json'
 
@@ -16,9 +16,9 @@ def read_skill_metadata(skill_dir: str) -> SkillSourceMetadata | None:
     try:
         with open(metadata_path, 'r', encoding='utf-8') as f:
             data = json.loads(f.read())
-            depends_on = None
-            if 'depends_on' in data and data['depends_on']:
-                depends_on = [SkillDependency(**d) for d in data['depends_on']]
+            recommends = None
+            if 'recommends' in data and data['recommends']:
+                recommends = [SkillRecommendation(**d) for d in data['recommends']]
             return SkillSourceMetadata(
                 source=data['source'],
                 source_type=data['source_type'],
@@ -26,7 +26,7 @@ def read_skill_metadata(skill_dir: str) -> SkillSourceMetadata | None:
                 subpath=data.get('subpath'),
                 local_path=data.get('local_path'),
                 installed_at=data.get('installed_at'),
-                depends_on=depends_on,
+                recommends=recommends,
             )
     except Exception:
         return None
@@ -44,9 +44,9 @@ def write_skill_metadata(skill_dir: str, metadata: SkillSourceMetadata) -> None:
         'installed_at': metadata.installed_at or datetime.now().isoformat(),
     }
 
-    if metadata.depends_on is not None:
-        payload['depends_on'] = [
-            {'name': d.name, 'source': d.source} for d in metadata.depends_on
+    if metadata.recommends is not None:
+        payload['recommends'] = [
+            {'name': d.name, 'source': d.source} for d in metadata.recommends
         ]
 
     with open(metadata_path, 'w', encoding='utf-8') as f:

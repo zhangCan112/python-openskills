@@ -131,52 +131,52 @@ def test_market_search(monkeypatch):
     mock_market_search.assert_called_once_with('keyword')
 
 
-def test_deps_check_no_args(monkeypatch):
+def test_recommends_check_no_args(monkeypatch):
     monkeypatch.setattr('openskills.cli.find_all_skills', lambda: [])
     runner = CliRunner()
-    result = runner.invoke(cli, ['deps', 'check'])
+    result = runner.invoke(cli, ['recommends', 'check'])
     assert result.exit_code == 0
 
 
-def test_deps_check_with_skill(monkeypatch):
+def test_recommends_check_with_skill(monkeypatch):
     monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
-    monkeypatch.setattr('openskills.cli.check_dependencies', lambda d: {"missing": [], "satisfied": []})
+    monkeypatch.setattr('openskills.cli.check_recommendations', lambda d: {"missing": [], "satisfied": []})
     runner = CliRunner()
-    result = runner.invoke(cli, ['deps', 'check', 'my-skill'])
+    result = runner.invoke(cli, ['recommends', 'check', 'my-skill'])
     assert result.exit_code == 0
 
 
-def test_deps_tree_no_args(monkeypatch):
+def test_recommends_tree_no_args(monkeypatch):
     monkeypatch.setattr('openskills.cli.find_all_skills', lambda: [])
     runner = CliRunner()
-    result = runner.invoke(cli, ['deps', 'tree'])
+    result = runner.invoke(cli, ['recommends', 'tree'])
     assert result.exit_code == 0
 
 
-def test_deps_tree_with_skill(monkeypatch):
+def test_recommends_tree_with_skill(monkeypatch):
     monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
-    monkeypatch.setattr('openskills.cli.resolve_dependency_tree', lambda d: {"name": "test", "deps": []})
+    monkeypatch.setattr('openskills.cli.resolve_recommendation_tree', lambda d: {"name": "test", "recs": []})
     runner = CliRunner()
-    result = runner.invoke(cli, ['deps', 'tree', 'my-skill'])
+    result = runner.invoke(cli, ['recommends', 'tree', 'my-skill'])
     assert result.exit_code == 0
 
 
-def test_deps_install_with_skill(monkeypatch):
+def test_recommends_install_with_skill(monkeypatch):
     monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
-    monkeypatch.setattr('openskills.cli.check_dependencies', lambda d: {"missing": [], "satisfied": []})
+    monkeypatch.setattr('openskills.cli.check_recommendations', lambda d: {"missing": [], "satisfied": []})
     runner = CliRunner()
-    result = runner.invoke(cli, ['deps', 'install', 'my-skill'])
+    result = runner.invoke(cli, ['recommends', 'install', 'my-skill'])
     assert result.exit_code == 0
 
 
-def test_deps_tree_output_format():
+def test_recommends_tree_output_format():
     tree = {
         "name": "root",
-        "deps": [
-            {"name": "child-a", "deps": [
-                {"name": "grandchild", "deps": []}
+        "recs": [
+            {"name": "child-a", "recs": [
+                {"name": "grandchild", "recs": []}
             ]},
-            {"name": "child-b", "deps": []},
+            {"name": "child-b", "recs": []},
         ],
     }
     result = _format_tree(tree)
