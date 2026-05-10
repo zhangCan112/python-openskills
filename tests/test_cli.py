@@ -181,6 +181,23 @@ def test_recommends_check_shows_source(monkeypatch):
     assert 'owner/dep-a' in result.output
 
 
+def test_recommends_install_shows_source(monkeypatch):
+    rec = SkillRecommendation(name="dep-a", source="https://github.com/owner/dep-a")
+    monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
+    monkeypatch.setattr('openskills.cli.check_recommendations',
+                        lambda d: {"missing": [rec], "satisfied": []})
+    mock_install = MagicMock()
+    monkeypatch.setattr('openskills.cli.install_skill', mock_install)
+    monkeypatch.setattr('openskills.installer.prompt_for_selection',
+                        lambda msg, choices: ["dep-a"])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['recommends', 'install', 'my-skill'])
+    assert result.exit_code == 0
+    assert 'dep-a' in result.output
+    assert 'owner/dep-a' in result.output
+    mock_install.assert_called_once()
+
+
 def test_recommends_tree_output_format():
     tree = {
         "name": "root",

@@ -178,6 +178,7 @@ def recommends_tree(skill_name):
 @click.option('--yes', '-y', is_flag=True, help='Skip confirmation')
 def recommends_install(skill_name, yes):
     """Install missing recommendations for a skill"""
+    from openskills.installer import prompt_for_selection
     skill = find_skill(skill_name)
     if not skill:
         click.echo(f"Error: Skill '{skill_name}' not found")
@@ -186,16 +187,41 @@ def recommends_install(skill_name, yes):
     if not results["missing"]:
         click.echo(click.style("All recommendations already satisfied.", fg='green'))
         return
-    click.echo(click.style("The following recommendations will be installed:", bold=True))
+
+    click.echo(click.style("Missing recommendations:", bold=True))
     for rec in results["missing"]:
-        click.echo(f"  - {rec.name} (from {rec.source})")
-    if not yes:
-        if not click.confirm("\nInstall these recommendations?", default=True):
-            return
+        link = _terminal_link(rec.source, _format_source(rec.source))
+        click.echo(f"  - {click.style(rec.name, bold=True)} ({link})")
+
+    satisfied = results.get("satisfied", [])
+    if satisfied:
+        click.echo(click.style("Already installed:", fg='green'))
+        for rec in satisfied:
+            click.echo(f"  ✓ {rec.name}")
+
+    if yes:
+        to_install = [rec.name for rec in results["missing"]]
+    else:
+        choices = [
+            {
+                'name': f"{rec.name} ({_format_source(rec.source)})",
+                'value': rec.name,
+                'checked': True
+            }
+            for rec in results["missing"]
+        ]
+        to_install = prompt_for_selection('Select recommendations to install', choices)
+
+    if not to_install:
+        click.echo(click.style("No recommendations selected.", fg='yellow'))
+        return
+
     options = InstallOptions(yes=yes)
-    for rec in results["missing"]:
-        click.echo(f"  Installing: {click.style(rec.name, bold=True)}")
-        install_skill(rec.source, options)
+    source_map = {rec.name: rec.source for rec in results["missing"]}
+    for name in to_install:
+        source = source_map.get(name, "")
+        click.echo(f"  Installing: {click.style(name, bold=True)}")
+        install_skill(source, options)
 
 
 def _format_tree(node: dict, prefix: str = "", is_last: bool = True) -> str:
