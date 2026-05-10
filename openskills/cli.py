@@ -9,6 +9,28 @@ from openskills.market import market_list, market_search
 from openskills.recommends import resolve_recommendation_tree, check_recommendations
 
 
+def _terminal_link(url: str, text: str | None = None) -> str:
+    label = text or url
+    return f"\x1b]8;;{url}\x1b\\{label}\x1b]8;;\x1b\\"
+
+
+def _format_source(source: str) -> str:
+    if not source:
+        return "(unknown)"
+    if source.startswith("https://github.com/"):
+        parts = source.replace("https://github.com/", "").split("/")
+        return f"{parts[0]}/{parts[1]}" if len(parts) >= 2 else source
+    if source.startswith("git@github.com:"):
+        cleaned = source.replace("git@github.com:", "").replace(".git", "")
+        parts = cleaned.split("/")
+        return f"{parts[0]}/{parts[1]}" if len(parts) >= 2 else source
+    if source.startswith("http://") or source.startswith("https://"):
+        from urllib.parse import urlparse
+        parsed = urlparse(source)
+        return parsed.netloc + parsed.path
+    return source
+
+
 @click.group(invoke_without_command=True)
 @click.option('--version', is_flag=True, help='Show version and exit')
 @click.pass_context
@@ -109,9 +131,12 @@ def recommends_check(skill_name):
         if results["missing"]:
             click.echo(click.style(f"✗ {skill_name} has uninstalled recommendations:", fg='red'))
             for rec in results["missing"]:
-                click.echo(f"    - {rec.name} (not installed)")
-        else:
+                link = _terminal_link(rec.source, _format_source(rec.source))
+                click.echo(f"    - {click.style(rec.name, bold=True)} ({link})")
+        elif results["satisfied"]:
             click.echo(click.style(f"✓ {skill_name} - all recommendations satisfied", fg='green'))
+        else:
+            click.echo(f"  {skill_name} has no recommendations")
     else:
         skills = find_all_skills()
         issues = 0
@@ -122,7 +147,8 @@ def recommends_check(skill_name):
                 issues += 1
                 click.echo(click.style(f"✗ {skill.name} has uninstalled recommendations:", fg='red'))
                 for rec in results["missing"]:
-                    click.echo(f"    - {rec.name} (not installed)")
+                    link = _terminal_link(rec.source, _format_source(rec.source))
+                    click.echo(f"    - {click.style(rec.name, bold=True)} ({link})")
             elif results["satisfied"]:
                 ok += 1
                 click.echo(click.style(f"✓ {skill.name} - all recommendations satisfied", fg='green'))

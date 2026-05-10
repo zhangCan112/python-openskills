@@ -3,7 +3,7 @@ import types
 from unittest.mock import MagicMock
 from click.testing import CliRunner
 from openskills.cli import cli, _format_tree
-from openskills.models import Skill, SkillLocation
+from openskills.models import Skill, SkillLocation, SkillRecommendation
 
 
 def test_version_flag():
@@ -167,6 +167,18 @@ def test_recommends_install_with_skill(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['recommends', 'install', 'my-skill'])
     assert result.exit_code == 0
+
+
+def test_recommends_check_shows_source(monkeypatch):
+    rec = SkillRecommendation(name="dep-a", source="https://github.com/owner/dep-a")
+    monkeypatch.setattr('openskills.cli.find_skill', lambda n: types.SimpleNamespace(base_dir='/fake'))
+    monkeypatch.setattr('openskills.cli.check_recommendations',
+                        lambda d: {"missing": [rec], "satisfied": []})
+    runner = CliRunner()
+    result = runner.invoke(cli, ['recommends', 'check', 'my-skill'])
+    assert result.exit_code == 0
+    assert 'dep-a' in result.output
+    assert 'owner/dep-a' in result.output
 
 
 def test_recommends_tree_output_format():
