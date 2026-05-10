@@ -5,6 +5,8 @@ from unittest.mock import patch
 import pytest
 
 from openskills.installer import (
+    _format_source,
+    _terminal_link,
     expand_path,
     find_skills_in_repo,
     format_size,
@@ -246,3 +248,42 @@ class TestFindSkillsInRepo:
         (sub / "SKILL.md").write_text(SKILL_MD_NO_NAME, encoding="utf-8")
         result = find_skills_in_repo(str(tmp_path))
         assert result[0]["skill_name"] == "fallback-name"
+
+
+class TestTerminalLink:
+    def test_link_with_text(self):
+        result = _terminal_link("https://github.com/owner/repo", "owner/repo")
+        assert "owner/repo" in result
+        assert "https://github.com/owner/repo" in result
+        assert "\x1b]8;;" in result
+
+    def test_link_without_text_uses_url(self):
+        result = _terminal_link("https://github.com/owner/repo")
+        assert "https://github.com/owner/repo" in result
+        assert "\x1b]8;;" in result
+
+
+class TestFormatSource:
+    def test_github_url_shortens_to_owner_repo(self):
+        result = _format_source("https://github.com/owner/repo")
+        assert result == "owner/repo"
+
+    def test_github_url_with_subpath(self):
+        result = _format_source("https://github.com/owner/repo/skills/foo")
+        assert result == "owner/repo"
+
+    def test_git_at_url(self):
+        result = _format_source("git@github.com:owner/repo.git")
+        assert result == "owner/repo"
+
+    def test_non_github_url_strips_scheme(self):
+        result = _format_source("https://gitlab.com/team/project")
+        assert result == "gitlab.com/team/project"
+
+    def test_empty_string(self):
+        result = _format_source("")
+        assert result == "(unknown)"
+
+    def test_local_path(self):
+        result = _format_source("./local-skill")
+        assert result == "./local-skill"

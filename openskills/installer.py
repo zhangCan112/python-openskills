@@ -15,6 +15,29 @@ from openskills.dirs import get_skills_dir, get_cache_dir
 from openskills.market import find_skill_by_name
 from openskills.recommends import resolve_recommendation_tree
 
+
+def _terminal_link(url: str, text: str | None = None) -> str:
+    label = text or url
+    return f"\x1b]8;;{url}\x1b\\{label}\x1b]8;;\x1b\\"
+
+
+def _format_source(source: str) -> str:
+    if not source:
+        return "(unknown)"
+    if source.startswith("https://github.com/"):
+        parts = source.replace("https://github.com/", "").split("/")
+        return f"{parts[0]}/{parts[1]}" if len(parts) >= 2 else source
+    if source.startswith("git@github.com:"):
+        cleaned = source.replace("git@github.com:", "").replace(".git", "")
+        parts = cleaned.split("/")
+        return f"{parts[0]}/{parts[1]}" if len(parts) >= 2 else source
+    if source.startswith("http://") or source.startswith("https://"):
+        from urllib.parse import urlparse
+        parsed = urlparse(source)
+        return parsed.netloc + parsed.path
+    return source
+
+
 ANTHROPIC_MARKETPLACE_SKILLS = [
     'xlsx',
     'docx',
