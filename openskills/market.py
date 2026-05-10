@@ -424,6 +424,7 @@ def generate_market_html(skills):
 
         <div class="search-box">
             <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search skill name or description...">
+            <div class="stats" id="stats"></div>
         </div>
 
         <div id="contentContainer"></div>
@@ -432,12 +433,10 @@ def generate_market_html(skills):
 
     <script>
         const skills = {json.dumps(skills_data, ensure_ascii=False, indent=2)};
-        let selectedTags = [];
 
         const searchInput = document.getElementById('searchInput');
         const contentContainer = document.getElementById('contentContainer');
         const noResults = document.getElementById('noResults');
-        const stats = document.getElementById('stats');        const noResults = document.getElementById('noResults');
         const stats = document.getElementById('stats');
 
         function init() {{
