@@ -29,6 +29,7 @@ openskills market search <keyword>       # 搜索市场 skill
 openskills recommends check [skill]      # 检查推荐依赖安装状态
 openskills recommends tree [skill]       # 展示推荐依赖树
 openskills recommends install <skill>    # 安装缺失的推荐依赖
+openskills recommends add <skill>        # 交互式添加推荐伴生 skill
 openskills --version                     # 显示版本
 ```
 

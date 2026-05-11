@@ -29,6 +29,7 @@ openskills market search <keyword>       # Search market skills
 openskills recommends check [skill]      # Check recommendation satisfaction
 openskills recommends tree [skill]       # Display recommendation tree
 openskills recommends install <skill>    # Install missing recommendations
+openskills recommends add <skill>        # Interactively add recommended companion skills
 openskills --version                     # Show version
 ```
 
