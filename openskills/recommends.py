@@ -1,7 +1,8 @@
 import os
 
-from openskills.metadata import read_skill_metadata
+from openskills.metadata import read_skill_metadata, write_skill_metadata
 from openskills.finder import find_all_skills, find_skill
+from openskills.models import SkillRecommendation, SkillSourceMetadata, SkillSourceType
 
 
 def resolve_recommendation_tree(skill_dir: str, _visiting: set | None = None) -> dict:
@@ -61,3 +62,25 @@ def get_recommenders(skill_name: str) -> list[dict]:
                     break
 
     return recommenders
+
+
+def add_recommendation(skill_dir: str, recommendation: SkillRecommendation) -> bool:
+    metadata = read_skill_metadata(skill_dir)
+
+    if metadata is None:
+        metadata = SkillSourceMetadata(
+            source=skill_dir,
+            source_type=SkillSourceType.LOCAL,
+            recommends=[],
+        )
+
+    if metadata.recommends is None:
+        metadata.recommends = []
+
+    for rec in metadata.recommends:
+        if rec.name == recommendation.name:
+            return False
+
+    metadata.recommends.append(recommendation)
+    write_skill_metadata(skill_dir, metadata)
+    return True

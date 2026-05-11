@@ -7,8 +7,9 @@ from openskills.recommends import (
     resolve_recommendation_tree,
     check_recommendations,
     get_recommenders,
+    add_recommendation,
 )
-from openskills.metadata import write_skill_metadata
+from openskills.metadata import read_skill_metadata, write_skill_metadata
 from openskills.models import SkillRecommendation, SkillSourceMetadata, SkillSourceType
 
 
@@ -191,3 +192,90 @@ class TestGetRecommenders:
         names = [d["name"] for d in result]
         assert "child-a" in names
         assert "child-b" in names
+
+
+def _create_skill_without_metadata(base_dir, name):
+    skill_dir = os.path.join(base_dir, name)
+    os.makedirs(skill_dir, exist_ok=True)
+    skill_md = os.path.join(skill_dir, "SKILL.md")
+    with open(skill_md, "w", encoding="utf-8") as f:
+        f.write(f"---\nname: {name}\ndescription: Test {name}\n---\n")
+    return skill_dir
+
+
+class TestAddRecommendation:
+    def test_creates_metadata_if_missing(self, tmp_path):
+        skill_dir = _create_skill_without_metadata(str(tmp_path), "myskill")
+        assert not os.path.exists(os.path.join(skill_dir, ".openskills.json"))
+
+        add_recommendation(skill_dir, SkillRecommendation(name="rec-skill", source="https://example.com/rec"))
+
+        metadata = read_skill_metadata(skill_dir)
+        assert metadata is not None
+        assert metadata.source_type == SkillSourceType.LOCAL
+        assert metadata.recommends is not None
+        assert len(metadata.recommends) == 1
+        assert metadata.recommends[0].name == "rec-skill"
+
+    def test_appends_to_existing_recommends(self, tmp_path):
+        skill_dir = _create_skill_without_metadata(str(tmp_path), "myskill")
+        write_skill_metadata(skill_dir, SkillSourceMetadata(
+            source="https://github.com/test/repo",
+            source_type=SkillSourceType.GIT,
+            recommends=[SkillRecommendation(name="existing", source="test")],
+        ))
+
+        add_recommendation(skill_dir, SkillRecommendation(name="new-rec", source="test2"))
+
+        metadata = read_skill_metadata(skill_dir)
+        assert metadata is not None
+        assert len(metadata.recommends) == 2
+        names = [r.name for r in metadata.recommends]
+        assert "existing" in names
+        assert "new-rec" in names
+
+    def test_adds_recommends_to_metadata_without_recommends(self, tmp_path):
+        skill_dir = _create_skill_without_metadata(str(tmp_path), "myskill")
+        write_skill_metadata(skill_dir, SkillSourceMetadata(
+            source="https://github.com/test/repo",
+            source_type=SkillSourceType.GIT,
+        ))
+
+        add_recommendation(skill_dir, SkillRecommendation(name="new-rec", source="test"))
+
+        metadata = read_skill_metadata(skill_dir)
+        assert metadata is not None
+        assert metadata.recommends is not None
+        assert len(metadata.recommends) == 1
+        assert metadata.recommends[0].name == "new-rec"
+
+    def test_duplicate_name_not_added(self, tmp_path):
+        skill_dir = _create_skill_without_metadata(str(tmp_path), "myskill")
+        write_skill_metadata(skill_dir, SkillSourceMetadata(
+            source="test",
+            source_type=SkillSourceType.LOCAL,
+            recommends=[SkillRecommendation(name="existing", source="test")],
+        ))
+
+        result = add_recommendation(skill_dir, SkillRecommendation(name="existing", source="test"))
+
+        assert result is False
+        metadata = read_skill_metadata(skill_dir)
+        assert len(metadata.recommends) == 1
+
+    def test_preserves_other_metadata_fields(self, tmp_path):
+        skill_dir = _create_skill_without_metadata(str(tmp_path), "myskill")
+        write_skill_metadata(skill_dir, SkillSourceMetadata(
+            source="https://github.com/test/repo",
+            source_type=SkillSourceType.GIT,
+            repo_url="https://github.com/test/repo",
+            subpath="skills/myskill",
+            installed_at="2024-01-01T00:00:00",
+        ))
+
+        add_recommendation(skill_dir, SkillRecommendation(name="rec", source="test"))
+
+        metadata = read_skill_metadata(skill_dir)
+        assert metadata.repo_url == "https://github.com/test/repo"
+        assert metadata.subpath == "skills/myskill"
+        assert metadata.installed_at == "2024-01-01T00:00:00"
