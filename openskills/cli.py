@@ -248,29 +248,33 @@ def recommends_add(skill_name):
         click.echo(click.style("No current recommendations.", dim=True))
 
     added = []
-    while True:
+    try:
+        while True:
+            click.echo()
+            rec_name = click.prompt("  Recommended skill name", default="", show_default=False)
+            stripped = rec_name.strip()
+            if not stripped:
+                click.echo(click.style("  No name entered, finishing.", fg='yellow'))
+                if not added:
+                    click.echo(click.style("  No recommendations added.", fg='yellow'))
+                break
+
+            rec_source = click.prompt("  Source (git URL or leave empty)", default="", show_default=False)
+
+            recommendation = SkillRecommendation(name=stripped, source=rec_source.strip())
+            result = add_recommendation(skill.base_dir, recommendation)
+
+            if result:
+                added.append(stripped)
+                click.echo(click.style(f"  ✓ Added '{stripped}'", fg='green'))
+            else:
+                click.echo(click.style(f"  ⚠ '{stripped}' already in recommendations, skipped", fg='yellow'))
+
+            more = click.prompt("  Add another? (y/N)", default="n").strip().lower()
+            if more != 'y':
+                break
+    except KeyboardInterrupt:
         click.echo()
-        rec_name = click.prompt("  Recommended skill name", default="", show_default=False)
-        if not rec_name.strip():
-            click.echo(click.style("  Empty name, skipping.", fg='yellow'))
-            if not added:
-                click.echo(click.style("  No recommendations added.", fg='yellow'))
-            break
-
-        rec_source = click.prompt("  Source (git URL or leave empty)", default="", show_default=False)
-
-        recommendation = SkillRecommendation(name=rec_name.strip(), source=rec_source.strip())
-        result = add_recommendation(skill.base_dir, recommendation)
-
-        if result:
-            added.append(rec_name.strip())
-            click.echo(click.style(f"  ✓ Added '{rec_name.strip()}'", fg='green'))
-        else:
-            click.echo(click.style(f"  ⚠ '{rec_name.strip()}' already in recommendations, skipped", fg='yellow'))
-
-        more = click.prompt("  Add another? (y/N)", default="n").strip().lower()
-        if more != 'y':
-            break
 
     if added:
         click.echo(click.style(f"\n✓ Added {len(added)} recommendation(s) to {skill_name}", fg='green'))
