@@ -224,6 +224,60 @@ def recommends_install(skill_name, yes):
         install_skill(source, options)
 
 
+@recommends.command('add')
+@click.argument('skill_name')
+def recommends_add(skill_name):
+    """Interactively add recommended companion skills"""
+    from openskills.recommends import add_recommendation
+    from openskills.models import SkillRecommendation
+    from openskills.metadata import read_skill_metadata
+
+    skill = find_skill(skill_name)
+    if not skill:
+        click.echo(f"Error: Skill '{skill_name}' not found")
+        return
+
+    click.echo(click.style(f"Adding recommendations for: {skill_name}", bold=True))
+
+    metadata = read_skill_metadata(skill.base_dir)
+    if metadata and metadata.recommends:
+        click.echo(click.style("Current recommendations:", dim=True))
+        for rec in metadata.recommends:
+            click.echo(f"  - {rec.name} ({_format_source(rec.source)})")
+    else:
+        click.echo(click.style("No current recommendations.", dim=True))
+
+    added = []
+    while True:
+        click.echo()
+        rec_name = click.prompt("  Recommended skill name", default="", show_default=False)
+        if not rec_name.strip():
+            click.echo(click.style("  Empty name, skipping.", fg='yellow'))
+            if not added:
+                click.echo(click.style("  No recommendations added.", fg='yellow'))
+            break
+
+        rec_source = click.prompt("  Source (git URL or leave empty)", default="", show_default=False)
+
+        recommendation = SkillRecommendation(name=rec_name.strip(), source=rec_source.strip())
+        result = add_recommendation(skill.base_dir, recommendation)
+
+        if result:
+            added.append(rec_name.strip())
+            click.echo(click.style(f"  ✓ Added '{rec_name.strip()}'", fg='green'))
+        else:
+            click.echo(click.style(f"  ⚠ '{rec_name.strip()}' already in recommendations, skipped", fg='yellow'))
+
+        more = click.prompt("  Add another? (y/N)", default="n").strip().lower()
+        if more != 'y':
+            break
+
+    if added:
+        click.echo(click.style(f"\n✓ Added {len(added)} recommendation(s) to {skill_name}", fg='green'))
+        for name in added:
+            click.echo(f"  - {name}")
+
+
 def _format_tree(node: dict, prefix: str = "", is_last: bool = True) -> str:
     lines = []
     connector = "└── " if is_last else "├── "
