@@ -533,7 +533,7 @@ def _install_recommendations(skill_dir: str, options: InstallOptions) -> None:
 
 
 def install_skill(source: str, options: InstallOptions) -> None:
-    folder = '.claude/skills'
+    folder = '.agents/skills'
     is_project = not options.global_install
     target_dir = os.path.join(os.getcwd(), folder) if is_project else os.path.join(str(Path.home()), folder)
 

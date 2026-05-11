@@ -4,15 +4,15 @@ from pathlib import Path
 
 def get_skills_dir(global_install: bool = False) -> str:
     if global_install:
-        return os.path.join(str(Path.home()), '.claude/skills')
-    return os.path.join(os.getcwd(), '.claude/skills')
+        return os.path.join(str(Path.home()), '.agents/skills')
+    return os.path.join(os.getcwd(), '.agents/skills')
 
 
 def get_search_dirs() -> list[str]:
     return [
-        os.path.join(os.getcwd(), '.agent/skills'),
+        os.path.join(os.getcwd(), '.agents/skills'),
         os.path.join(os.getcwd(), '.claude/skills'),
-        os.path.join(str(Path.home()), '.agent/skills'),
+        os.path.join(str(Path.home()), '.agents/skills'),
         os.path.join(str(Path.home()), '.claude/skills'),
     ]
 
