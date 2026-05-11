@@ -10,12 +10,13 @@
      ▼
   cli.py  ← Click 命令解析
      │
-     ├── list     → finder.py (扫描目录) → 输出列表
-     ├── install  → installer.py → market.py / git clone / 本地复制
-     ├── update   → updater.py → 读取 metadata → 重新安装
-     ├── remove   → remover.py → 删除目录
-     ├── manage   → remover.py → 交互式选择 → 删除目录
-     └── market   → market.py → 读取 JSON 数据 → 终端/HTML 展示
+     ├── list      → finder.py (扫描目录) → 输出列表
+     ├── install   → installer.py → market.py / git clone / 本地复制
+     ├── update    → updater.py → 读取 metadata → 重新安装 + 交互式补全来源
+     ├── remove    → remover.py → 删除目录
+     ├── manage    → remover.py → 交互式选择 → 删除目录
+     ├── market    → market.py → 读取 JSON 数据 → 终端/HTML 展示
+     └── recommends → recommends.py → 依赖检测/安装
 ```
 
 所有模块都依赖以下基础层：
@@ -32,7 +33,7 @@ config.py      配置文件加载
 
 ## 核心模块详解
 
-### `models.py` (43 行) — 数据类型定义
+### `models.py` (36 行) — 数据类型定义
 
 定义了系统中所有核心数据结构：
 
@@ -42,29 +43,30 @@ config.py      配置文件加载
 | `SkillSourceType` | 枚举：`GIT`（从 git 仓库安装）/ `LOCAL`（从本地路径安装） |
 | `Skill` | 已安装的 skill 信息：名称、描述、位置、路径 |
 | `SkillLocationInfo` | skill 的具体文件位置：SKILL.md 路径、base 目录、来源目录 |
-| `SkillSourceMetadata` | 安装来源元数据：原始 source、来源类型、repo URL、子路径、本地路径、安装时间 |
+| `SkillSourceMetadata` | 安装来源元数据：原始 source、来源类型、repo URL、子路径、本地路径、推荐依赖、安装时间 |
 | `InstallOptions` | 安装选项：是否全局安装、是否跳过交互确认 |
+| `SkillRecommendation` | 推荐依赖：名称、来源 |
 
 **工作原理：** 纯数据定义模块，无逻辑。所有其他模块通过 import 使用这些类型。`SkillLocation` 和 `SkillSourceType` 继承自 `str` 和 `Enum`，可以同时作为字符串和枚举使用。
 
 ---
 
-### `dirs.py` (30 行) — 目录路径管理
+### `dirs.py` (17 行) — 目录路径管理
 
 管理所有 skill 相关的目录路径。
 
 **三个函数：**
 
 1. **`get_skills_dir(global_install=False)`** — 获取 skill 安装目标目录
-   - 项目级：`./.claude/skills/`
-   - 全局级：`~/.claude/skills/`
+   - 项目级：`./.agents/skills/`
+   - 全局级：`~/.agents/skills/`
 
 2. **`get_search_dirs()`** — 返回 skill 搜索目录列表（按优先级排序）
    ```
-   1. ./.agent/skills       （项目级通用）
-   2. ./.claude/skills      （项目级 Claude）
-   3. ~/.agent/skills       （全局通用）
-   4. ~/.claude/skills      （全局 Claude）
+   1. ./.agents/skills      （项目级，安装默认路径）
+   2. ./.claude/skills      （项目级，向后兼容）
+   3. ~/.agents/skills      （全局级，安装默认路径）
+   4. ~/.claude/skills      （全局级，向后兼容）
    ```
    高优先级的目录中的 skill 会覆盖低优先级中的同名 skill。
 
@@ -76,7 +78,7 @@ config.py      配置文件加载
 
 ---
 
-### `yaml_utils.py` (12 行) — YAML frontmatter 解析
+### `yaml_utils.py` (6 行) — YAML frontmatter 解析
 
 解析 SKILL.md 文件中的 YAML frontmatter（开头 `---` 包围的元数据块）。
 
@@ -103,7 +105,7 @@ Skill content here...
 
 ---
 
-### `metadata.py` (39 行) — 安装元数据读写
+### `metadata.py` (42 行) — 安装元数据读写
 
 管理 `.openskills.json` 文件，记录每个 skill 的安装来源信息。
 
@@ -111,7 +113,7 @@ Skill content here...
 
 1. **`read_skill_metadata(skill_dir)`** — 读取元数据
    - 读取 `skill_dir/.openskills.json`
-   - 解析 JSON 并构建 `SkillSourceMetadata` 对象
+   - 解析 JSON 并构建 `SkillSourceMetadata` 对象（含 `recommends` 推荐依赖）
    - 文件不存在或格式错误时返回 `None`
 
 2. **`write_skill_metadata(skill_dir, metadata)`** — 写入元数据
@@ -127,15 +129,18 @@ Skill content here...
   "repo_url": "https://github.com/anthropics/skills",
   "subpath": "skills/pdf",
   "local_path": null,
-  "installed_at": "2026-05-07T23:41:00.123456"
+  "installed_at": "2026-05-07T23:41:00.123456",
+  "recommends": [
+    {"name": "pdf", "source": "https://github.com/anthropics/skills/skills/pdf"}
+  ]
 }
 ```
 
-**用途：** `updater.py` 读取这些元数据来知道从哪里重新拉取 skill 的最新版本。
+**用途：** `updater.py` 读取这些元数据来知道从哪里重新拉取 skill 的最新版本。`recommends.py` 读取 `recommends` 字段来检查依赖关系。
 
 ---
 
-### `config.py` (44 行) — 配置文件加载
+### `config.py` (32 行) — 配置文件加载
 
 加载 `market_sources.yaml` 配置文件，用于指定市场 skill 的数据源。
 
@@ -153,7 +158,7 @@ Skill content here...
 
 ---
 
-### `finder.py` (78 行) — Skill 发现引擎
+### `finder.py` (59 行) — Skill 发现引擎
 
 在所有搜索目录中扫描并发现已安装的 skill。
 
@@ -181,15 +186,15 @@ Skill content here...
 **工作原理：**
 ```
 搜索目录列表:
-  ./.agent/skills/  ──→ 扫描子目录 ──→ 检查 SKILL.md ──→ 加入结果
-  ./.claude/skills/ ──→ 扫描子目录 ──→ 检查 SKILL.md ──→ 去重后加入结果
-  ~/.agent/skills/  ──→ ...
-  ~/.claude/skills/ ──→ ...
+  ./.agents/skills/  ──→ 扫描子目录 ──→ 检查 SKILL.md ──→ 加入结果
+  ./.claude/skills/  ──→ 扫描子目录 ──→ 检查 SKILL.md ──→ 去重后加入结果
+  ~/.agents/skills/  ──→ ...
+  ~/.claude/skills/  ──→ ...
 ```
 
 ---
 
-### `installer.py` (569 行) — 安装逻辑
+### `installer.py` (531 行) — 安装逻辑
 
 整个系统最复杂的模块，负责从 git 仓库、本地路径或市场名称安装 skill。
 
@@ -253,6 +258,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 - 扫描仓库找到所有 skill
 - 如果有多个 skill 且非 `-y` 模式，弹出交互选择
 - 逐个复制到目标目录并写入元数据
+- 安装完成后自动检测并提示安装推荐依赖
 
 **`install_from_local(local_path, target_dir, ...)`** — 从本地路径安装
 - 如果路径直接包含 `SKILL.md`，作为单个 skill 安装
@@ -265,9 +271,32 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 
 ---
 
-### `updater.py` (180 行) — 更新逻辑
+### `recommends.py` (45 行) — 推荐依赖管理
 
-根据安装时记录的元数据，从原始来源重新安装 skill 以获取最新版本。
+管理 skill 之间的推荐依赖关系，支持传递依赖检测和循环依赖检测。
+
+**三个函数：**
+
+1. **`resolve_recommendation_tree(skill_dir)`** — 解析完整的推荐依赖树
+   - 读取 skill 的 `.openskills.json` 中的 `recommends` 字段
+   - 递归解析传递依赖（A→B→C）
+   - 检测循环依赖，发现时抛出 `ValueError`
+   - 返回树形结构 `dict`
+
+2. **`check_recommendations(skill_dir)`** — 检查推荐依赖的安装状态
+   - 返回 `{"satisfied": [...], "missing": [...]}`
+   - `satisfied`：已安装的推荐依赖
+   - `missing`：未安装的推荐依赖（包含 `name` 和 `source`）
+
+3. **`get_recommenders(skill_name)`** — 反向查询：哪些已安装的 skill 推荐了指定 skill
+   - 遍历所有已安装 skill 的元数据
+   - 返回推荐了该 skill 的 skill 列表
+
+---
+
+### `updater.py` (219 行) — 更新逻辑
+
+根据安装时记录的元数据，从原始来源重新安装 skill 以获取最新版本。支持交互式补全缺失的来源元数据。
 
 **核心函数：**
 
@@ -277,6 +306,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
    - 对每个 skill 读取 `.openskills.json` 元数据
    - 根据来源类型（git/local）调用对应的更新函数
    - 分类汇总错误（缺少元数据、源不存在、克隆失败等）
+   - **交互式补全**：更新完成后，对缺少元数据的 skill 引导用户添加来源信息
 
 2. **`_update_skill_from_git(target_path, metadata, skill_name)`** — 从 git 更新
    - 在临时目录中 `git clone --depth 1`
@@ -290,13 +320,24 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 
 4. **`_update_skill_from_dir(target_path, source_dir)`** — 通用更新操作
    - 安全检查（路径遍历防护）
+   - 备份本地的 `.openskills.json`（如果存在）
    - `shutil.rmtree` 删除旧目录 + `shutil.copytree` 复制新内容
+   - **元数据保护**：如果源目录没有自带 `.openskills.json`，恢复本地备份；如果源目录自带，以源为准
+
+5. **`_prompt_add_source(skill)`** — 交互式添加来源元数据
+   - 显示 skill 名称和路径
+   - 用户确认是否添加
+   - 输入完整来源路径（git URL 或本地路径，一步完成）
+   - 自动解析并写入 `.openskills.json`
+
+6. **`_parse_git_source(source)`** — 从完整 git URL 解析 repo_url 和 subpath
+   - 例如 `https://github.com/owner/repo/skills/pdf` → repo=`.../repo`, subpath=`skills/pdf`
 
 **错误分类：**
 
 | 类别 | 含义 |
 |------|------|
-| `missing_metadata` | skill 没有 `.openskills.json`（手动放置的 skill） |
+| `missing_metadata` | skill 没有 `.openskills.json`（手动放置的 skill，会触发交互式补全） |
 | `missing_local_source` | 本地源路径已不存在 |
 | `missing_local_skill_file` | 本地源路径中 SKILL.md 已丢失 |
 | `missing_repo_url` | git 类型但缺少 repo URL |
@@ -305,7 +346,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 
 ---
 
-### `remover.py` (84 行) — 删除与交互管理
+### `remover.py` (76 行) — 删除与交互管理
 
 提供单个删除和批量交互管理两种删除方式。
 
@@ -314,7 +355,8 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 1. **`remove_skill(skill_name)`** — 删除单个 skill
    - 调用 `find_skill()` 查找位置
    - 未找到 → 输出错误并退出
-   - 找到 → `shutil.rmtree()` 删除整个目录
+   - 找到 → 检查是否有其他 skill 推荐了它，有则交互确认
+   - `shutil.rmtree()` 删除整个目录
    - 显示删除结果（名称、位置、来源目录）
 
 2. **`manage_skills()`** — 交互式批量管理
@@ -329,7 +371,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 
 ---
 
-### `market.py` (712 行) — 市场数据与展示
+### `market.py` (497 行) — 市场数据与展示
 
 包含市场 skill 的数据模型、加载、搜索、终端展示和 HTML 页面生成。
 
@@ -390,7 +432,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 
 ---
 
-### `cli.py` (126 行) — CLI 命令定义
+### `cli.py` (229 行) — CLI 命令定义
 
 使用 Click 框架定义所有 CLI 命令，是用户与系统交互的入口。
 
@@ -406,16 +448,24 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 | `openskills manage` | `manage_skills()` | remover.py |
 | `openskills market list` | `market_list()` | market.py |
 | `openskills market search` | `market_search()` | market.py |
+| `openskills recommends check` | 内联 | recommends.py |
+| `openskills recommends tree` | 内联 | recommends.py |
+| `openskills recommends install` | 内联 | installer.py + recommends.py |
 
-**`list` 命令** 直接在 cli.py 中实现（逻辑简单）：
+**`list` 命令** 直接在 cli.py 中实现：
 - 调用 `find_all_skills()` 获取列表
 - 按 project/global 分组，每组内按名称排序
 - 显示名称、位置标签、描述
 - 底部显示统计摘要
 
+**`recommends` 子命令组** 提供依赖管理功能：
+- `check`：检查推荐依赖安装状态，显示可点击的源链接
+- `tree`：展示推荐依赖树
+- `install`：交互式选择安装缺失的推荐依赖
+
 **`--version`** 使用 `importlib.metadata.version()` 获取版本号（pip 安装后可正确获取）。
 
-### `__main__.py` (4 行) — 模块入口
+### `__main__.py` (3 行) — 模块入口
 
 支持 `python -m openskills` 方式运行。简单地导入并调用 `cli()`。
 
@@ -432,7 +482,7 @@ Git 仓库使用 SHA256 哈希键的本地缓存系统：
 2. 对每个配置的仓库：
    - 克隆到临时目录
    - 扫描指定路径（如 `skills/`）下的所有 SKILL.md 文件
-    - 提取 YAML frontmatter 中的元数据（name、description 等）
+   - 提取 YAML frontmatter 中的元数据（name、description 等）
 3. 将收集到的数据保存到 `openskills/data/marketskills/` 目录下的 JSON 文件
 
 **输出文件格式：**
@@ -492,11 +542,11 @@ sources:
   │           ├─ _install_from_subpath("skills/pdf", ...)
   │           │   ├─ 验证 SKILL.md 存在且格式正确
   │           │   ├─ warn_if_conflict() → 检查冲突
-  │           │   ├─ shutil.copytree() → 复制到 .claude/skills/pdf/
+  │           │   ├─ shutil.copytree() → 复制到 .agents/skills/pdf/
   │           │   └─ write_skill_metadata() → 写入 .openskills.json
   │           └─ 输出安装结果
   │
-  └─ .claude/skills/pdf/
+  └─ .agents/skills/pdf/
       ├── SKILL.md
       ├── scripts/
       ├── references/
@@ -518,10 +568,32 @@ sources:
   ├─ _update_skill_from_git()
   │   ├─ git clone 到临时目录
   │   ├─ 定位 skills/pdf/ 子目录
-  │   ├─ _update_skill_from_dir(): 删除旧目录 + 复制新内容
+  │   ├─ _update_skill_from_dir()
+  │   │   ├─ 备份本地 .openskills.json（如果存在）
+  │   │   ├─ rmtree 旧目录 + copytree 新内容
+  │   │   └─ 源无 .openskills.json → 恢复本地备份
   │   └─ write_skill_metadata(): 更新元数据
   │
   └─ 输出更新结果
+```
+
+### 缺少元数据的更新流程
+
+```
+用户: openskills update
+  │
+  ├─ 遍历所有 skill，发现 some-skill 没有 .openskills.json
+  │   └─ 记录到 skills_without_metadata 列表
+  │
+  ├─ 显示 Summary 和错误汇总
+  │
+  └─ 对每个缺元数据的 skill:
+      └─ _prompt_add_source(skill)
+          ├─ 显示 skill 名称和路径
+          ├─ 用户确认是否添加来源 (Y/n)
+          ├─ 输入完整来源路径（如 https://github.com/owner/repo/skills/pdf）
+          ├─ _parse_git_source() 自动解析 repo_url + subpath
+          └─ write_skill_metadata() 写入 .openskills.json
 ```
 
 ---
@@ -533,21 +605,35 @@ python-openskills/
 ├── openskills/                         # 主包
 │   ├── __init__.py                     # v2.0.0
 │   ├── __main__.py                     # python -m 入口
-│   ├── cli.py                          # CLI 命令定义 (126 行)
-│   ├── models.py                       # 数据类型 (43 行)
-│   ├── finder.py                       # Skill 发现 (78 行)
-│   ├── installer.py                    # 安装逻辑 (569 行)
-│   ├── updater.py                      # 更新逻辑 (180 行)
-│   ├── remover.py                      # 删除/管理 (84 行)
-│   ├── market.py                       # 市场数据+展示 (712 行)
-│   ├── metadata.py                     # 元数据读写 (39 行)
-│   ├── dirs.py                         # 目录路径 (30 行)
-│   ├── config.py                       # 配置加载 (44 行)
-│   ├── yaml_utils.py                   # YAML 解析 (12 行)
+│   ├── cli.py                          # CLI 命令定义 (229 行)
+│   ├── models.py                       # 数据类型 (36 行)
+│   ├── finder.py                       # Skill 发现 (59 行)
+│   ├── installer.py                    # 安装逻辑 (531 行)
+│   ├── updater.py                      # 更新逻辑 (219 行)
+│   ├── remover.py                      # 删除/管理 (76 行)
+│   ├── recommends.py                   # 推荐依赖管理 (45 行)
+│   ├── market.py                       # 市场数据+展示 (497 行)
+│   ├── metadata.py                     # 元数据读写 (42 行)
+│   ├── dirs.py                         # 目录路径 (17 行)
+│   ├── config.py                       # 配置加载 (32 行)
+│   ├── yaml_utils.py                   # YAML 解析 (6 行)
 │   └── data/
 │       └── marketskills/               # 市场数据缓存
 │           ├── github.com_anthropics_skills.json
 │           └── github.com_zhangCan112_python-openskills.json
+├── tests/                              # 测试套件 (238 个测试)
+│   ├── test_cli.py
+│   ├── test_config.py
+│   ├── test_dirs.py
+│   ├── test_finder.py
+│   ├── test_installer.py
+│   ├── test_market.py
+│   ├── test_metadata.py
+│   ├── test_models.py
+│   ├── test_recommends.py
+│   ├── test_remover.py
+│   ├── test_updater.py
+│   └── test_yaml_utils.py
 ├── scripts/
 │   └── collect_market_skills.py        # 市场数据收集脚本
 ├── skills/
@@ -556,6 +642,7 @@ python-openskills/
 ├── pyproject.toml                      # 现代打包配置
 ├── setup.py                            # 传统打包配置
 ├── requirements.txt                    # 依赖列表
-├── test_cli.py                         # 导入/CLI 冒烟测试
-└── README.md                           # 项目说明
+├── README.md                           # 项目说明（英文）
+├── README_CN.md                        # 项目说明（中文）
+└── ARCHITECTURE.md                     # 架构文档
 ```
