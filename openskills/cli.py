@@ -49,8 +49,8 @@ def cli(ctx, version):
         click.echo(ctx.get_help())
 
 
-@cli.command()
-def list():
+@cli.command('list')
+def list_cmd():
     """List all installed skills"""
     _list_skills()
 

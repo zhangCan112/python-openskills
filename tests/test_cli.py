@@ -1,4 +1,3 @@
-import builtins
 import types
 from unittest.mock import MagicMock
 from click.testing import CliRunner
@@ -106,7 +105,6 @@ def test_update_no_args(monkeypatch):
 def test_update_with_skill_names(monkeypatch):
     mock_update = MagicMock()
     monkeypatch.setattr('openskills.cli.update_skills', mock_update)
-    monkeypatch.setattr('openskills.cli.list', builtins.list)
     runner = CliRunner()
     result = runner.invoke(cli, ['update', 'skill1', 'skill2'])
     assert result.exit_code == 0
