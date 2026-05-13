@@ -72,7 +72,7 @@ def manage_skills() -> None:
 
         choices = [
             {
-                'name': f"{click.style(skill.name.ljust(25), bold=True)} {click.style('(project)' if skill.location == 'project' else '(global)', fg='blue' if skill.location == 'project' else 'dim')}",
+                'name': f"{click.style(skill.name.ljust(25), bold=True)} {click.style('(project)' if skill.location == 'project' else '(global)', fg='blue' if skill.location == 'project' else None, dim=skill.location != 'project')}",
                 'value': skill.name,
                 'checked': False
             }
