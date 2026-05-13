@@ -107,7 +107,10 @@ def _parse_git_source(source: str) -> dict:
         if len(parts) >= 5:
             repo_url = '/'.join(parts[:5])
             if len(parts) > 5:
-                subpath = '/'.join(parts[5:])
+                remaining = parts[5:]
+                if len(remaining) >= 2 and remaining[0] == 'tree':
+                    remaining = remaining[2:]
+                subpath = '/'.join(remaining)
 
     return {
         'source': source,

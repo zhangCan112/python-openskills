@@ -601,7 +601,10 @@ def _install_from_git(source: str, target_dir: str, is_project: bool, options: I
         repo_url = '/'.join(parts[:5])
 
         if len(parts) > 5:
-            skill_subpath = '/'.join(parts[5:])
+            remaining = parts[5:]
+            if len(remaining) >= 2 and remaining[0] == 'tree':
+                remaining = remaining[2:]
+            skill_subpath = '/'.join(remaining)
     elif source.startswith('git@'):
         repo_url = source
     else:

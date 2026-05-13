@@ -304,6 +304,16 @@ class TestParseGitSource:
         result = _parse_git_source(url)
         assert result["source"] == url
 
+    def test_github_tree_url(self):
+        result = _parse_git_source("https://github.com/owner/repo/tree/main/skills/pdf")
+        assert result["repo_url"] == "https://github.com/owner/repo"
+        assert result["subpath"] == "skills/pdf"
+
+    def test_github_tree_url_deep(self):
+        result = _parse_git_source("https://github.com/owner/repo/tree/main/a/b/c")
+        assert result["repo_url"] == "https://github.com/owner/repo"
+        assert result["subpath"] == "a/b/c"
+
 
 class TestPromptAddSource:
     @patch("openskills.updater.write_skill_metadata")
