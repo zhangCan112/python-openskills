@@ -168,18 +168,19 @@ def get_repo_branch(repo_dir: str) -> str:
         return 'main'
 
 
-def save_market_skills(repo: str, branch: str, skills: List[Dict[str, Any]], output_dir: str) -> None:
-    """Save market skills to a JSON file"""
-    # Sanitize repo name for filename
-    # Remove URL protocol (http:// or https://) if present for filename only
+def repo_to_filename(repo: str) -> str:
+    """Convert a repo URL to a safe JSON filename"""
     filename_repo = repo
     if filename_repo.startswith('http://'):
         filename_repo = filename_repo[7:]
     elif filename_repo.startswith('https://'):
         filename_repo = filename_repo[8:]
-    
-    # Replace slashes and colons with underscores to create safe filename
-    filename = filename_repo.replace('/', '_').replace(':', '_') + '.json'
+    return filename_repo.replace('/', '_').replace(':', '_') + '.json'
+
+
+def save_market_skills(repo: str, branch: str, skills: List[Dict[str, Any]], output_dir: str) -> None:
+    """Save market skills to a JSON file"""
+    filename = repo_to_filename(repo)
     filepath = os.path.join(output_dir, filename)
     
     # Keep the original repo URL (with protocol) in the JSON data
@@ -266,6 +267,8 @@ def main():
     output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'openskills', 'data', 'marketskills')
     os.makedirs(output_dir, exist_ok=True)
     
+    expected_files = {repo_to_filename(s['repo']) for s in sources if 'repo' in s}
+
     # Collect from each source
     success_count = 0
     for source in sources:
@@ -278,6 +281,12 @@ def main():
             success_count += 1
         except Exception as e:
             print(f"\n[ERROR] Error processing {source.get('repo', 'unknown')}: {e}")
+
+    # Clean up stale files from removed sources
+    for existing in os.listdir(output_dir):
+        if existing.endswith('.json') and existing not in expected_files:
+            os.remove(os.path.join(output_dir, existing))
+            print(f"  [CLEANUP] Removed stale file: {existing}")
     
     # Summary
     print("\n" + "=" * 60)
