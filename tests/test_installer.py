@@ -340,3 +340,37 @@ class TestInstallRecommendations:
         _install_recommendations(str(tmp_path), InstallOptions(yes=True))
 
         assert mock_install.call_count == 2
+
+
+class TestInstallFromRepoChoices:
+    def test_choices_have_no_ansi_escape_codes(self, monkeypatch, tmp_path):
+        repo_dir = tmp_path / "repo"
+        repo_dir.mkdir()
+        (repo_dir / "SKILL.md").write_text("---\nname: alpha\n---\n")
+        sub = repo_dir / "beta"
+        sub.mkdir()
+        (sub / "SKILL.md").write_text("---\nname: beta\n---\n")
+
+        captured_choices = {}
+
+        def fake_prompt(message, choices):
+            captured_choices['value'] = choices
+            return [c['value'] for c in choices]
+
+        monkeypatch.setattr("openskills.installer.prompt_for_selection", fake_prompt)
+
+        from openskills.installer import InstallOptions, install_from_repo
+        target = tmp_path / "target"
+        target.mkdir()
+
+        import re
+        install_from_repo(
+            str(repo_dir), str(target),
+            InstallOptions(yes=False), None,
+            {'source_type': 'local', 'source': str(repo_dir)}
+        )
+
+        for choice in captured_choices['value']:
+            assert not re.search(r'\x1b\[[0-9;]*m', choice['name']), (
+                f"Choice name contains ANSI escape codes: {repr(choice['name'])}"
+            )

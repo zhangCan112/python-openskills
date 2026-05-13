@@ -278,7 +278,7 @@ def install_from_repo(
     if not options.yes and len(skill_infos) > 1:
         choices = [
             {
-                'name': f"{click.style(info['skill_name'].ljust(25), bold=True)} {click.style(format_size(info['size']), dim=True)}",
+                'name': f"{info['skill_name'].ljust(25)} {format_size(info['size'])}",
                 'value': info['skill_name'],
                 'checked': True
             }
