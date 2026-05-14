@@ -311,7 +311,9 @@ def install_from_repo(
             click.echo(click.style("Security error: Installation path outside target directory", fg='red'))
             continue
 
-        shutil.copytree(info['skill_dir'], target_path, dirs_exist_ok=True)
+        if os.path.exists(target_path):
+            shutil.rmtree(target_path)
+        shutil.copytree(info['skill_dir'], target_path)
 
         if source_info['source_type'] == 'local':
             metadata = SkillSourceMetadata(
@@ -373,7 +375,9 @@ def install_single_local_skill(
         click.echo(click.style("Security error: Installation path outside target directory", fg='red'))
         sys.exit(1)
 
-    shutil.copytree(skill_dir, target_path, dirs_exist_ok=True)
+    if os.path.exists(target_path):
+        shutil.rmtree(target_path)
+    shutil.copytree(skill_dir, target_path)
 
     metadata = SkillSourceMetadata(
         source=source_info['source'],
@@ -661,7 +665,9 @@ def _install_from_subpath(
         click.echo(click.style("Security error: Installation path outside target directory", fg='red'))
         sys.exit(1)
 
-    shutil.copytree(skill_dir, target_path, dirs_exist_ok=True)
+    if os.path.exists(target_path):
+        shutil.rmtree(target_path)
+    shutil.copytree(skill_dir, target_path)
 
     metadata = SkillSourceMetadata(
         source=source_info['source'],
