@@ -20,4 +20,4 @@ openskills = "openskills.cli:cli"
 include = ["openskills*"]
 
 [tool.setuptools.package-data]
-openskills = ["data/marketskills/*.json"]
+openskills = ["data/marketskills/market_index.json"]

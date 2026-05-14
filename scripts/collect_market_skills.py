@@ -168,35 +168,7 @@ def get_repo_branch(repo_dir: str) -> str:
         return 'main'
 
 
-def repo_to_filename(repo: str) -> str:
-    """Convert a repo URL to a safe JSON filename"""
-    filename_repo = repo
-    if filename_repo.startswith('http://'):
-        filename_repo = filename_repo[7:]
-    elif filename_repo.startswith('https://'):
-        filename_repo = filename_repo[8:]
-    return filename_repo.replace('/', '_').replace(':', '_') + '.json'
-
-
-def save_market_skills(repo: str, branch: str, skills: List[Dict[str, Any]], output_dir: str) -> None:
-    """Save market skills to a JSON file"""
-    filename = repo_to_filename(repo)
-    filepath = os.path.join(output_dir, filename)
-    
-    # Keep the original repo URL (with protocol) in the JSON data
-    data = {
-        'repo': repo,
-        'branch': branch,
-        'skills': skills
-    }
-    
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    
-    print(f"  [OK] Saved {len(skills)} skill(s) to {filename}")
-
-
-def collect_from_source(source: Dict[str, Any], output_dir: str) -> None:
+def collect_from_source(source: Dict[str, Any]) -> Dict[str, Any] | None:
     """Collect skills from a single source"""
     repo = source['repo']
     branch = source.get('branch', None)
@@ -217,7 +189,7 @@ def collect_from_source(source: Dict[str, Any], output_dir: str) -> None:
     # Clone repository
     repo_dir = clone_repo(repo, branch)
     if not repo_dir:
-        return
+        return None
     
     try:
         # Get actual branch (if not specified)
@@ -233,13 +205,13 @@ def collect_from_source(source: Dict[str, Any], output_dir: str) -> None:
                 subpath_info = f" (at '{skill['subpath']}')" if skill['subpath'] else " (root)"
                 print(f"    - {skill['name']}{subpath_info}")
             
-            # Save to market skills database
-            save_market_skills(repo, branch, skills, output_dir)
+            return {'repo': repo, 'branch': branch, 'skills': skills}
         else:
             if skillspaths:
                 print(f"  [!] No valid skills found in specified paths: {skillspaths}")
             else:
                 print(f"  [!] No valid skills found in repository")
+            return None
     
     finally:
         # Clean up temp directory
@@ -267,9 +239,8 @@ def main():
     output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'openskills', 'data', 'marketskills')
     os.makedirs(output_dir, exist_ok=True)
     
-    expected_files = {repo_to_filename(s['repo']) for s in sources if 'repo' in s}
-
     # Collect from each source
+    all_sources_data = []
     success_count = 0
     for source in sources:
         if 'repo' not in source:
@@ -277,16 +248,28 @@ def main():
             continue
         
         try:
-            collect_from_source(source, output_dir)
+            result = collect_from_source(source)
+            if result:
+                all_sources_data.append(result)
             success_count += 1
         except Exception as e:
             print(f"\n[ERROR] Error processing {source.get('repo', 'unknown')}: {e}")
 
-    # Clean up stale files from removed sources
+    # Clean up old per-repo files
     for existing in os.listdir(output_dir):
-        if existing.endswith('.json') and existing not in expected_files:
-            os.remove(os.path.join(output_dir, existing))
+        existing_path = os.path.join(output_dir, existing)
+        if existing == 'market_index.json':
+            continue
+        if existing.endswith('.json'):
+            os.remove(existing_path)
             print(f"  [CLEANUP] Removed stale file: {existing}")
+
+    # Write single market_index.json
+    index_path = os.path.join(output_dir, 'market_index.json')
+    with open(index_path, 'w', encoding='utf-8') as f:
+        json.dump({'sources': all_sources_data}, f, indent=2, ensure_ascii=False)
+    
+    print(f"  [OK] Saved {len(all_sources_data)} source(s) to market_index.json")
     
     # Summary
     print("\n" + "=" * 60)

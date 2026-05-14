@@ -6,7 +6,7 @@ setup(
     python_requires='>=3.11',
     packages=find_packages(),
     package_data={
-        'openskills': ['data/marketskills/*.json'],
+        'openskills': ['data/marketskills/market_index.json'],
     },
     install_requires=[
         'click>=8.1.0',

@@ -112,28 +112,28 @@ class TestMarketSkillFromDict:
 
 
 class TestLoadMarketSkills:
-    def test_returns_empty_when_dir_missing(self, monkeypatch, tmp_path):
-        nonexistent = os.path.join(str(tmp_path), 'no_such_dir')
-        monkeypatch.setattr('openskills.market.MARKETSKILLS_DIR', nonexistent)
-        assert load_market_skills() == []
-
-    def test_returns_empty_for_empty_directory(self, monkeypatch, tmp_path):
-        monkeypatch.setattr('openskills.market.MARKETSKILLS_DIR', str(tmp_path))
+    def test_returns_empty_when_file_missing(self, monkeypatch, tmp_path):
+        nonexistent = os.path.join(str(tmp_path), 'market_index.json')
+        monkeypatch.setattr('openskills.market.MARKETSKILLS_INDEX', nonexistent)
         assert load_market_skills() == []
 
     def test_loads_skills_from_valid_json(self, monkeypatch, tmp_path):
         data = {
-            'repo': 'https://github.com/owner/repo',
-            'branch': 'main',
-            'skills': [
-                {'name': 'skill-a', 'description': 'First skill'},
-                {'name': 'skill-b', 'description': 'Second skill'},
-            ],
+            'sources': [
+                {
+                    'repo': 'https://github.com/owner/repo',
+                    'branch': 'main',
+                    'skills': [
+                        {'name': 'skill-a', 'description': 'First skill'},
+                        {'name': 'skill-b', 'description': 'Second skill'},
+                    ],
+                }
+            ]
         }
-        filepath = os.path.join(str(tmp_path), 'skills.json')
+        filepath = os.path.join(str(tmp_path), 'market_index.json')
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f)
-        monkeypatch.setattr('openskills.market.MARKETSKILLS_DIR', str(tmp_path))
+        monkeypatch.setattr('openskills.market.MARKETSKILLS_INDEX', filepath)
 
         skills = load_market_skills()
         assert len(skills) == 2
@@ -142,32 +142,29 @@ class TestLoadMarketSkills:
         assert skills[0].repo == 'https://github.com/owner/repo'
         assert skills[0].branch == 'main'
 
-    def test_skips_non_json_files(self, monkeypatch, tmp_path):
-        txt_file = os.path.join(str(tmp_path), 'readme.txt')
-        with open(txt_file, 'w') as f:
-            f.write('not json')
-        monkeypatch.setattr('openskills.market.MARKETSKILLS_DIR', str(tmp_path))
-        assert load_market_skills() == []
-
     def test_skips_invalid_json(self, monkeypatch, tmp_path):
-        filepath = os.path.join(str(tmp_path), 'bad.json')
+        filepath = os.path.join(str(tmp_path), 'market_index.json')
         with open(filepath, 'w') as f:
             f.write('not valid json{{{')
-        monkeypatch.setattr('openskills.market.MARKETSKILLS_DIR', str(tmp_path))
+        monkeypatch.setattr('openskills.market.MARKETSKILLS_INDEX', filepath)
         assert load_market_skills() == []
 
     def test_skips_entry_missing_name_key(self, monkeypatch, tmp_path):
         data = {
-            'repo': 'https://github.com/owner/repo',
-            'branch': 'main',
-            'skills': [
-                {'description': 'No name field'},
-            ],
+            'sources': [
+                {
+                    'repo': 'https://github.com/owner/repo',
+                    'branch': 'main',
+                    'skills': [
+                        {'description': 'No name field'},
+                    ],
+                }
+            ]
         }
-        filepath = os.path.join(str(tmp_path), 'bad_skill.json')
+        filepath = os.path.join(str(tmp_path), 'market_index.json')
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f)
-        monkeypatch.setattr('openskills.market.MARKETSKILLS_DIR', str(tmp_path))
+        monkeypatch.setattr('openskills.market.MARKETSKILLS_INDEX', filepath)
         assert load_market_skills() == []
 
 

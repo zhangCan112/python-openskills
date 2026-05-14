@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 
 import click
 
-MARKETSKILLS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'marketskills')
+MARKETSKILLS_INDEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'marketskills', 'market_index.json')
 
 
 class MarketSkill:
@@ -55,22 +55,22 @@ class MarketSkill:
 
 def load_market_skills() -> List[MarketSkill]:
     skills = []
-    if not os.path.exists(MARKETSKILLS_DIR):
+    if not os.path.exists(MARKETSKILLS_INDEX):
         return skills
-    for filename in os.listdir(MARKETSKILLS_DIR):
-        if not filename.endswith('.json'):
-            continue
-        filepath = os.path.join(MARKETSKILLS_DIR, filename)
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            repo = data.get('repo', '')
-            branch = data.get('branch', 'main')
-            for skill_data in data.get('skills', []):
-                skill = MarketSkill.from_dict(skill_data, repo, branch)
-                skills.append(skill)
-        except (json.JSONDecodeError, KeyError):
-            continue
+    try:
+        with open(MARKETSKILLS_INDEX, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        for source_data in data.get('sources', []):
+            repo = source_data.get('repo', '')
+            branch = source_data.get('branch', 'main')
+            for skill_data in source_data.get('skills', []):
+                try:
+                    skill = MarketSkill.from_dict(skill_data, repo, branch)
+                    skills.append(skill)
+                except KeyError:
+                    continue
+    except (json.JSONDecodeError, KeyError):
+        pass
     return skills
 
 
