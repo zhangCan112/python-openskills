@@ -342,6 +342,171 @@ class TestInstallRecommendations:
         assert mock_install.call_count == 2
 
 
+class TestInstallFromSubpathMultiSkill:
+    def _make_skill(self, parent, name, skill_md=SKILL_MD_WITH_NAME):
+        d = parent / name
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "SKILL.md").write_text(skill_md, encoding="utf-8")
+        (d / "helper.py").write_text("# code", encoding="utf-8")
+        return d
+
+    def test_single_skill_subpath_installs_directly(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_from_subpath, InstallOptions
+        from openskills.metadata import read_skill_metadata
+
+        repo = tmp_path / "repo"
+        skills_dir = repo / "skills" / "pdf"
+        self._make_skill(skills_dir, ".", "---\nname: pdf\ndescription: PDF handler\n---\n")
+        target = tmp_path / "target"
+        target.mkdir()
+        monkeypatch.setattr("openskills.installer._install_recommendations", lambda *a: None)
+
+        _install_from_subpath(
+            "skills/pdf", str(repo), str(target), True,
+            InstallOptions(yes=True),
+            {"source": "https://github.com/o/r/skills/pdf", "source_type": "git", "repo_url": "https://github.com/o/r"}
+        )
+
+        assert (target / "pdf" / "SKILL.md").exists()
+        meta = read_skill_metadata(str(target / "pdf"))
+        assert meta is not None
+        assert meta.subpath == "skills/pdf"
+
+    def test_parent_dir_scans_and_installs_all(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_from_subpath, InstallOptions
+        from openskills.metadata import read_skill_metadata
+
+        repo = tmp_path / "repo"
+        self._make_skill(repo / "skills", "skill-a", "---\nname: skill-a\ndescription: A skill\n---\n")
+        self._make_skill(repo / "skills", "skill-b", "---\nname: skill-b\ndescription: B skill\n---\n")
+        target = tmp_path / "target"
+        target.mkdir()
+
+        _install_from_subpath(
+            "skills", str(repo), str(target), True,
+            InstallOptions(yes=True),
+            {"source": "https://github.com/o/r/skills", "source_type": "git", "repo_url": "https://github.com/o/r"}
+        )
+
+        assert (target / "skill-a" / "SKILL.md").exists()
+        assert (target / "skill-b" / "SKILL.md").exists()
+        meta_a = read_skill_metadata(str(target / "skill-a"))
+        assert meta_a is not None
+        assert meta_a.repo_url == "https://github.com/o/r"
+        assert "skill-a" in meta_a.subpath
+
+    def test_confirmation_declined_cancels(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_from_subpath, InstallOptions
+
+        repo = tmp_path / "repo"
+        self._make_skill(repo / "skills", "skill-a", "---\nname: skill-a\n---\n")
+        target = tmp_path / "target"
+        target.mkdir()
+        monkeypatch.setattr("openskills.installer.click.confirm", lambda *a, **kw: False)
+
+        _install_from_subpath(
+            "skills", str(repo), str(target), True,
+            InstallOptions(yes=False),
+            {"source": "url", "source_type": "git", "repo_url": "repo"}
+        )
+
+        assert not (target / "skill-a").exists()
+
+    def test_yes_flag_skips_confirmation(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_from_subpath, InstallOptions
+
+        repo = tmp_path / "repo"
+        self._make_skill(repo / "skills", "skill-x", "---\nname: skill-x\n---\n")
+        target = tmp_path / "target"
+        target.mkdir()
+
+        confirm_called = []
+        monkeypatch.setattr("openskills.installer.click.confirm",
+                            lambda *a, **kw: confirm_called.append(True) or False)
+
+        _install_from_subpath(
+            "skills", str(repo), str(target), True,
+            InstallOptions(yes=True),
+            {"source": "url", "source_type": "git", "repo_url": "repo"}
+        )
+
+        assert confirm_called == []
+        assert (target / "skill-x" / "SKILL.md").exists()
+
+    def test_nonexistent_subpath_exits(self, tmp_path):
+        from openskills.installer import _install_from_subpath, InstallOptions
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        target = tmp_path / "target"
+        target.mkdir()
+
+        with pytest.raises(SystemExit):
+            _install_from_subpath(
+                "nonexistent", str(repo), str(target), True,
+                InstallOptions(yes=True),
+                {"source": "url", "source_type": "git", "repo_url": "repo"}
+            )
+
+    def test_subpath_no_skills_exits(self, tmp_path):
+        from openskills.installer import _install_from_subpath, InstallOptions
+
+        repo = tmp_path / "repo" / "empty"
+        repo.mkdir(parents=True)
+        target = tmp_path / "target"
+        target.mkdir()
+
+        with pytest.raises(SystemExit):
+            _install_from_subpath(
+                "empty", str(tmp_path / "repo"), str(target), True,
+                InstallOptions(yes=True),
+                {"source": "url", "source_type": "git", "repo_url": "repo"}
+            )
+
+    def test_metadata_subpath_uses_forward_slashes(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_from_subpath, InstallOptions
+        from openskills.metadata import read_skill_metadata
+
+        repo = tmp_path / "repo"
+        self._make_skill(repo / "skills", "my-skill", "---\nname: my-skill\n---\n")
+        target = tmp_path / "target"
+        target.mkdir()
+
+        _install_from_subpath(
+            "skills", str(repo), str(target), True,
+            InstallOptions(yes=True),
+            {"source": "url", "source_type": "git", "repo_url": "repo"}
+        )
+
+        meta = read_skill_metadata(str(target / "my-skill"))
+        assert "\\" not in meta.subpath
+        assert meta.subpath == "skills/my-skill"
+
+    def test_conflict_skip_does_not_block_others(self, tmp_path, monkeypatch):
+        from openskills.installer import _install_from_subpath, InstallOptions
+
+        repo = tmp_path / "repo"
+        self._make_skill(repo / "skills", "skill-a", "---\nname: skill-a\n---\n")
+        self._make_skill(repo / "skills", "skill-b", "---\nname: skill-b\n---\n")
+        target = tmp_path / "target"
+        target.mkdir()
+        (target / "skill-a").mkdir()
+
+        responses = iter([True, False])
+        def fake_confirm(msg, **kw):
+            return next(responses)
+        monkeypatch.setattr("openskills.installer.click.confirm", fake_confirm)
+
+        _install_from_subpath(
+            "skills", str(repo), str(target), True,
+            InstallOptions(yes=False),
+            {"source": "url", "source_type": "git", "repo_url": "repo"}
+        )
+
+        assert not (target / "skill-a" / "SKILL.md").exists()
+        assert (target / "skill-b" / "SKILL.md").exists()
+
+
 class TestInstallFromRepoChoices:
     def test_choices_have_no_ansi_escape_codes(self, monkeypatch, tmp_path):
         repo_dir = tmp_path / "repo"

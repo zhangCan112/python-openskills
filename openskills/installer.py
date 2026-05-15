@@ -629,22 +629,15 @@ def _install_from_git(source: str, target_dir: str, is_project: bool, options: I
         install_from_repo(repo_dir, target_dir, options, repo_name, source_info)
 
 
-def _install_from_subpath(
+def _install_single_skill_from_subpath(
+    skill_dir: str,
     skill_subpath: str,
-    repo_dir: str,
     target_dir: str,
     is_project: bool,
     options: InstallOptions,
     source_info: dict
 ) -> None:
-    skill_dir = os.path.join(repo_dir, skill_subpath)
-    skill_md_path = os.path.join(skill_dir, 'SKILL.md')
-
-    if not os.path.exists(skill_md_path):
-        click.echo(click.style(f"Error: SKILL.md not found at {skill_subpath}", fg='red'))
-        sys.exit(1)
-
-    with open(skill_md_path, 'r', encoding='utf-8') as f:
+    with open(os.path.join(skill_dir, 'SKILL.md'), 'r', encoding='utf-8') as f:
         content = f.read()
 
     if not has_valid_frontmatter(content):
@@ -682,3 +675,86 @@ def _install_from_subpath(
     click.echo(f"   Location: {target_path}")
 
     _install_recommendations(target_path, options)
+
+
+def _install_from_subpath(
+    skill_subpath: str,
+    repo_dir: str,
+    target_dir: str,
+    is_project: bool,
+    options: InstallOptions,
+    source_info: dict
+) -> None:
+    skill_dir = os.path.join(repo_dir, skill_subpath)
+    skill_md_path = os.path.join(skill_dir, 'SKILL.md')
+
+    if os.path.exists(skill_md_path):
+        _install_single_skill_from_subpath(
+            skill_dir, skill_subpath, target_dir, is_project, options, source_info
+        )
+        return
+
+    if not os.path.isdir(skill_dir):
+        click.echo(click.style(f"Error: Directory not found at {skill_subpath}", fg='red'))
+        sys.exit(1)
+
+    skill_infos = find_skills_in_repo(skill_dir)
+
+    if not skill_infos:
+        click.echo(click.style(f"Error: No skills found in {skill_subpath}", fg='red'))
+        sys.exit(1)
+
+    click.echo(click.style(f"\nFound {len(skill_infos)} skill(s) in {skill_subpath}:", bold=True))
+    for info in skill_infos:
+        desc = info.get('description') or ''
+        if desc:
+            click.echo(f"  - {click.style(info['skill_name'], bold=True)}: {click.style(desc, dim=True)}")
+        else:
+            click.echo(f"  - {click.style(info['skill_name'], bold=True)}")
+
+    if not options.yes:
+        if not click.confirm(
+            click.style(f"\nInstall all {len(skill_infos)} skill(s)?", fg='yellow'),
+            default=True
+        ):
+            click.echo(click.style("Installation cancelled.", fg='yellow'))
+            return
+
+    installed_count = 0
+    for info in skill_infos:
+        skill_name = info['skill_name']
+        target_path = os.path.join(target_dir, skill_name)
+
+        should_install = warn_if_conflict(skill_name, target_path, is_project, options.yes)
+        if not should_install:
+            click.echo(click.style(f"Skipped: {skill_name}", fg='yellow'))
+            continue
+
+        os.makedirs(target_dir, exist_ok=True)
+
+        if not is_path_inside(target_path, target_dir):
+            click.echo(click.style("Security error: Installation path outside target directory", fg='red'))
+            continue
+
+        if os.path.exists(target_path):
+            shutil.rmtree(target_path)
+        shutil.copytree(info['skill_dir'], target_path)
+
+        subpath = os.path.relpath(info['skill_dir'], repo_dir).replace('\\', '/')
+        metadata = SkillSourceMetadata(
+            source=source_info['source'],
+            source_type=SkillSourceType.GIT,
+            repo_url=source_info['repo_url'],
+            subpath=subpath,
+            installed_at=None
+        )
+        write_skill_metadata(target_path, metadata)
+
+        click.echo(click.style(f"[OK] Installed: {skill_name}", fg='green'))
+        installed_count += 1
+
+    click.echo(click.style(f"\n[OK] Installation complete: {installed_count} skill(s) installed", fg='green'))
+
+    if installed_count == 1 and skill_infos:
+        installed_skill_dir = os.path.join(target_dir, skill_infos[0]['skill_name'])
+        _install_recommendations(installed_skill_dir, options)
